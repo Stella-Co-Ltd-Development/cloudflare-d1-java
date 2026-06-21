@@ -1,0 +1,55 @@
+name: Feature request
+description: Propose a new feature or API change
+title: "[Feature]: "
+labels:
+  - type: feature
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for proposing a feature. Please describe the use case and expected behavior.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What problem does this feature solve?
+      placeholder: Describe the problem.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: What should be added or changed?
+      placeholder: Describe the proposed solution.
+    validations:
+      required: true
+
+  - type: textarea
+    id: api
+    attributes:
+      label: Proposed API
+      description: If applicable, include a Java API example.
+      render: java
+    validations:
+      required: false
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives
+      description: What alternatives did you consider?
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I checked existing issues before opening this one.
+          required: true
+        - label: This issue does not include secrets, API tokens, private keys, customer data, or sensitive data.
+          required: true

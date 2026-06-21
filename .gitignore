@@ -1,0 +1,21 @@
+target/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# GPG / release local files
+*.asc
+release.properties
+
+# Environment
+.env
+.env.*

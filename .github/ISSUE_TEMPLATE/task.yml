@@ -1,0 +1,49 @@
+name: Task
+description: Track implementation, test, documentation, or release work
+title: "[Task]: "
+labels:
+  - type: task
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What needs to be done?
+      placeholder: Describe the task.
+    validations:
+      required: true
+
+  - type: textarea
+    id: tasks
+    attributes:
+      label: Tasks
+      description: List concrete tasks.
+      placeholder: |
+        - [ ] Add ...
+        - [ ] Test ...
+        - [ ] Update ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance Criteria
+      description: How do we know this is complete?
+      placeholder: |
+        - ...
+        - ...
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: This task should be implemented from a separate branch.
+          required: true
+        - label: A pull request template must be used for the resulting PR.
+          required: true
+        - label: This task does not include secrets or sensitive data.
+          required: true
