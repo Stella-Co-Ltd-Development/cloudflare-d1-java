@@ -45,3 +45,21 @@ jobs:
 
       - name: Test
         run: mvn -B clean verify
+
+  release-profile:
+    name: Verify release profile
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+
+      - name: Verify release artifacts
+        run: mvn -B -Prelease -Dgpg.skip=true verify
