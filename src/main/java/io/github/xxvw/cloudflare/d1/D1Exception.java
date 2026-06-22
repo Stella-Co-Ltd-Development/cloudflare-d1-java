@@ -1,5 +1,7 @@
 package io.github.xxvw.cloudflare.d1;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
@@ -42,8 +44,12 @@ public class D1Exception extends RuntimeException {
     this.operation = operation;
     this.statusCode = statusCode;
     this.rawBody = rawBody;
-    this.errors = errors == null ? List.of() : List.copyOf(errors);
-    this.messages = messages == null ? List.of() : List.copyOf(messages);
+    this.errors = errors == null
+        ? Collections.<D1ResponseInfo>emptyList()
+        : Collections.unmodifiableList(new ArrayList<>(errors));
+    this.messages = messages == null
+        ? Collections.<D1ResponseInfo>emptyList()
+        : Collections.unmodifiableList(new ArrayList<>(messages));
   }
 
   /**

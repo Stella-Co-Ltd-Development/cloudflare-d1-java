@@ -6,6 +6,14 @@ This project follows Semantic Versioning.
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-06-22
+
+### Changed
+
+- Added Java 8-compatible transport customization and default HTTP transport.
+- Changed build output to Java 8-compatible bytecode.
+- Added CI coverage for Java 8, 11, 15, 17, and 21.
+
 ## [0.1.0] - 2026-06-22
 
 ### Added

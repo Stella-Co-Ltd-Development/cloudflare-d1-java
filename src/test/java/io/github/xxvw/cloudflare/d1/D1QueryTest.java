@@ -5,8 +5,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 class D1QueryTest {
@@ -46,9 +46,9 @@ class D1QueryTest {
         .isInstanceOf(IllegalArgumentException.class);
     assertThatThrownBy(() -> D1Query.of("SELECT ?", LocalDateTime.now()))
         .isInstanceOf(IllegalArgumentException.class);
-    assertThatThrownBy(() -> D1Query.of("SELECT ?", Map.of("a", "b")))
+    assertThatThrownBy(() -> D1Query.of("SELECT ?", Collections.singletonMap("a", "b")))
         .isInstanceOf(IllegalArgumentException.class);
-    assertThatThrownBy(() -> D1Query.of("SELECT ?", (Object) List.of("nested")))
+    assertThatThrownBy(() -> D1Query.of("SELECT ?", (Object) Collections.singletonList("nested")))
         .isInstanceOf(IllegalArgumentException.class);
     assertThatThrownBy(() -> D1Query.of("SELECT ?", new Object()))
         .isInstanceOf(IllegalArgumentException.class);
@@ -66,10 +66,18 @@ class D1QueryTest {
 
   @Test
   void allowsSqlExactlyOneHundredKilobytesAndRejectsLargerSql() {
-    String exact = "x".repeat(100 * 1024);
+    String exact = repeat("x", 100 * 1024);
     String tooLarge = exact + "x";
 
     assertThat(D1Query.of(exact).sql()).isEqualTo(exact);
     assertThatThrownBy(() -> D1Query.of(tooLarge)).isInstanceOf(IllegalArgumentException.class);
+  }
+
+  private static String repeat(String value, int count) {
+    StringBuilder builder = new StringBuilder(value.length() * count);
+    for (int i = 0; i < count; i++) {
+      builder.append(value);
+    }
+    return builder.toString();
   }
 }

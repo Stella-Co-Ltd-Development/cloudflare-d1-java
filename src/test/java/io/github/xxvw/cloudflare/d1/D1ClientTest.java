@@ -5,24 +5,15 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.IOException;
-import java.net.Authenticator;
-import java.net.CookieHandler;
-import java.net.ProxySelector;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.net.http.HttpTimeoutException;
-import java.net.http.WebSocket;
+import java.net.SocketTimeoutException;
 import java.time.Duration;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLParameters;
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicReference;
 import mockwebserver3.MockResponse;
 import mockwebserver3.MockWebServer;
 import mockwebserver3.RecordedRequest;
@@ -53,10 +44,10 @@ class D1ClientTest {
     assertThatThrownBy(() -> D1Client.fromEnv(name -> " "))
         .isInstanceOf(IllegalStateException.class);
 
-    Map<String, String> env = Map.of(
-        "CLOUDFLARE_ACCOUNT_ID", "test-account-id",
-        "D1_DATABASE_ID", "test-database-id",
-        "CLOUDFLARE_API_TOKEN", "test-token");
+    Map<String, String> env = new LinkedHashMap<>();
+    env.put("CLOUDFLARE_ACCOUNT_ID", "test-account-id");
+    env.put("D1_DATABASE_ID", "test-database-id");
+    env.put("CLOUDFLARE_API_TOKEN", "test-token");
 
     D1Client client = D1Client.fromEnv(env::get);
     client.close();
@@ -78,7 +69,7 @@ class D1ClientTest {
     assertThat(request.getHeaders().get("User-Agent")).startsWith("cloudflare-d1-java/");
     assertThat(request.getBody().utf8()).isEqualTo("{\"sql\":\"SELECT * FROM users WHERE id = ?\",\"params\":[1]}");
     assertThat(result.rows()).hasSize(1);
-    assertThat(result.firstRow()).contains(Map.of("id", 1, "name", "Taro"));
+    assertThat(result.firstRow()).contains(row("id", 1, "name", "Taro"));
     assertThat(result.rawBody()).contains("\"success\":true");
   }
 
@@ -98,8 +89,8 @@ class D1ClientTest {
     server.enqueue(ok(selectBody("[]", metaBody())));
     D1Client client = testClient();
 
-    client.query("SELECT * FROM users WHERE name = ? AND active = ?", List.of("Taro", true));
-    client.execute("UPDATE users SET active = ? WHERE id = ?", List.of(false, 1));
+    client.query("SELECT * FROM users WHERE name = ? AND active = ?", Arrays.asList("Taro", true));
+    client.execute("UPDATE users SET active = ? WHERE id = ?", Arrays.asList(false, 1));
 
     assertThat(server.takeRequest().getBody().utf8())
         .isEqualTo("{\"sql\":\"SELECT * FROM users WHERE name = ? AND active = ?\",\"params\":[\"Taro\",true]}");
@@ -109,9 +100,8 @@ class D1ClientTest {
 
   @Test
   void executeReturnsInsertMetadata() {
-    server.enqueue(ok(selectBody("[]", """
-        {"changed_db":true,"changes":1,"last_row_id":42,"rows_read":0,"rows_written":1,"duration":2.5}
-        """)));
+    server.enqueue(ok(selectBody("[]",
+        "{\"changed_db\":true,\"changes\":1,\"last_row_id\":42,\"rows_read\":0,\"rows_written\":1,\"duration\":2.5}")));
     D1Client client = testClient();
 
     D1Result result = client.execute("INSERT INTO users(name) VALUES (?)", "Taro");
@@ -124,9 +114,8 @@ class D1ClientTest {
 
   @Test
   void missingResultsAndMissingMetaUseSafeDefaultsAndUnknownMetaFieldsArePreserved() {
-    server.enqueue(ok("""
-        {"success":true,"result":[{"success":true,"meta":{"served_by_region":"wnam","unknown":null}}],"errors":[],"messages":[]}
-        """));
+    server.enqueue(ok("{\"success\":true,\"result\":[{\"success\":true,"
+        + "\"meta\":{\"served_by_region\":\"wnam\",\"unknown\":null}}],\"errors\":[],\"messages\":[]}"));
     D1Client client = testClient();
 
     D1Result result = client.query("SELECT 1");
@@ -151,18 +140,18 @@ class D1ClientTest {
 
   @Test
   void responseMessagesAndBatchListResultsAreImmutable() {
-    server.enqueue(ok("""
-        {"success":true,"result":[{"success":true,"results":[],"meta":{},"messages":[{"code":10,"message":"item"}]}],
-        "errors":[],"messages":[{"code":1,"message":"top"}]}
-        """));
+    server.enqueue(ok("{\"success\":true,\"result\":[{\"success\":true,\"results\":[],\"meta\":{},"
+        + "\"messages\":[{\"code\":10,\"message\":\"item\"}]}],"
+        + "\"errors\":[],\"messages\":[{\"code\":1,\"message\":\"top\"}]}"));
     D1Client client = testClient();
 
-    List<D1Result> results = client.batch(List.of(D1Query.of("SELECT 1")));
+    List<D1Result> results = client.batch(Collections.singletonList(D1Query.of("SELECT 1")));
 
     assertThat(results).hasSize(1);
     assertThat(results.get(0).messages()).extracting(D1ResponseInfo::code).containsExactly(1, 10);
     assertThatThrownBy(() -> results.add(results.get(0))).isInstanceOf(UnsupportedOperationException.class);
-    assertThatThrownBy(() -> results.get(0).messages().add(new D1ResponseInfo(2, "x", null, null, Map.of())))
+    assertThatThrownBy(() -> results.get(0).messages()
+        .add(new D1ResponseInfo(2, "x", null, null, Collections.emptyMap())))
         .isInstanceOf(UnsupportedOperationException.class);
   }
 
@@ -192,10 +181,9 @@ class D1ClientTest {
 
   @Test
   void customMappingObjectMapperDoesNotAffectInternalResponseParsing() {
-    server.enqueue(ok("""
-        {"success":true,"result":[{"success":true,"results":[{"id":1,"name":"Taro","unknown":"value"}],"meta":{},"extra":"ok"}],
-        "errors":[],"messages":[],"top_extra":true}
-        """));
+    server.enqueue(ok("{\"success\":true,\"result\":[{\"success\":true,"
+        + "\"results\":[{\"id\":1,\"name\":\"Taro\",\"unknown\":\"value\"}],"
+        + "\"meta\":{},\"extra\":\"ok\"}],\"errors\":[],\"messages\":[],\"top_extra\":true}"));
     server.enqueue(ok(selectBody("[{\"id\":1,\"name\":\"Taro\",\"unknown\":\"value\"}]", metaBody())));
     ObjectMapper strictMapper = new ObjectMapper()
         .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true);
@@ -214,6 +202,31 @@ class D1ClientTest {
   }
 
   @Test
+  void customTransportReceivesRequestAndReturnsResponse() {
+    AtomicReference<D1TransportRequest> captured = new AtomicReference<>();
+    D1Transport transport = request -> {
+      captured.set(request);
+      return new D1TransportResponse(200, Collections.emptyMap(), selectBody("[]", metaBody()));
+    };
+    D1Client client = D1Client.builder()
+        .accountId("test-account-id")
+        .databaseId("test-database-id")
+        .apiToken("test-token")
+        .baseUrl("https://example.com/client/v4")
+        .transport(transport)
+        .retryPolicy(D1RetryPolicy.none())
+        .build();
+
+    assertThat(client.query("SELECT 1").success()).isTrue();
+    assertThat(captured.get().method()).isEqualTo("POST");
+    assertThat(captured.get().uri().toString())
+        .isEqualTo("https://example.com/client/v4/accounts/test-account-id/d1/database/test-database-id/query");
+    assertThat(captured.get().headers()).containsEntry("Authorization", "Bearer test-token");
+    assertThat(captured.get().timeout()).isEqualTo(Duration.ofSeconds(30));
+    assertThat(captured.get().body()).isEqualTo("{\"sql\":\"SELECT 1\",\"params\":[]}");
+  }
+
+  @Test
   void queryFirstReturnsEmptyOrFirstRowAndTypedFirstRow() {
     server.enqueue(ok(selectBody("[]", metaBody())));
     server.enqueue(ok(selectBody("[{\"id\":1,\"name\":\"Taro\"},{\"id\":2,\"name\":\"Jiro\"}]", metaBody())));
@@ -221,18 +234,16 @@ class D1ClientTest {
     D1Client client = testClient();
 
     assertThat(client.queryFirst("SELECT id FROM users")).isEmpty();
-    assertThat(client.queryFirst("SELECT id FROM users")).contains(Map.of("id", 1, "name", "Taro"));
+    assertThat(client.queryFirst("SELECT id FROM users")).contains(row("id", 1, "name", "Taro"));
     assertThat(client.queryFirst("SELECT id FROM users", UserRow.class)).contains(new UserRow(3, "Saburo"));
   }
 
   @Test
   void batchSendsBatchBodyAndThrowsOnPartialFailure() throws Exception {
-    server.enqueue(ok("""
-        {"success":true,"result":[
-          {"success":true,"results":[],"meta":{"changes":1}},
-          {"success":false,"results":[],"meta":{},"errors":[{"code":7500,"message":"failed"}]}
-        ],"errors":[],"messages":[]}
-        """));
+    server.enqueue(ok("{\"success\":true,\"result\":["
+        + "{\"success\":true,\"results\":[],\"meta\":{\"changes\":1}},"
+        + "{\"success\":false,\"results\":[],\"meta\":{},\"errors\":[{\"code\":7500,\"message\":\"failed\"}]}"
+        + "],\"errors\":[],\"messages\":[]}"));
     D1Client client = testClient();
 
     assertThatThrownBy(() -> client.batch(
@@ -246,7 +257,7 @@ class D1ClientTest {
     assertThat(server.takeRequest().getBody().utf8())
         .isEqualTo("{\"batch\":[{\"sql\":\"INSERT INTO users(name) VALUES (?)\",\"params\":[\"Taro\"]},"
             + "{\"sql\":\"SELECT * FROM missing\",\"params\":[]}]}");
-    assertThatThrownBy(() -> client.batch(List.of())).isInstanceOf(IllegalArgumentException.class);
+    assertThatThrownBy(() -> client.batch(Collections.emptyList())).isInstanceOf(IllegalArgumentException.class);
   }
 
   @Test
@@ -278,9 +289,8 @@ class D1ClientTest {
   @Test
   void mapsTopLevelAndQueryResultFailures() {
     server.enqueue(ok("{\"success\":false,\"errors\":[{\"code\":1,\"message\":\"top\"}],\"messages\":[]}"));
-    server.enqueue(ok("""
-        {"success":true,"result":[{"success":false,"results":[],"errors":[{"code":2,"message":"query"}]}],"errors":[],"messages":[]}
-        """));
+    server.enqueue(ok("{\"success\":true,\"result\":[{\"success\":false,\"results\":[],"
+        + "\"errors\":[{\"code\":2,\"message\":\"query\"}]}],\"errors\":[],\"messages\":[]}"));
     D1Client client = testClient();
 
     assertThatThrownBy(() -> client.query("SELECT 1")).isInstanceOf(D1ApiException.class);
@@ -357,7 +367,7 @@ class D1ClientTest {
         .accountId("test-account-id")
         .databaseId("test-database-id")
         .apiToken("test-token")
-        .baseUrl(URI.create("http://127.0.0.1:9"))
+        .baseUrl("http://127.0.0.1:9")
         .requestTimeout(Duration.ofMillis(100))
         .retryPolicy(D1RetryPolicy.none())
         .build();
@@ -369,7 +379,9 @@ class D1ClientTest {
         .databaseId("test-database-id")
         .apiToken("test-token")
         .baseUrl(server.url("/client/v4").uri())
-        .httpClient(new TimeoutHttpClient())
+        .transport(request -> {
+          throw new SocketTimeoutException("timed out");
+        })
         .retryPolicy(D1RetryPolicy.none())
         .build();
 
@@ -419,79 +431,45 @@ class D1ClientTest {
     return "{\"changed_db\":false,\"changes\":0,\"rows_read\":1,\"rows_written\":0,\"duration\":1.0}";
   }
 
-  record UserRow(long id, String name) {}
+  private static Map<String, Object> row(Object... values) {
+    Map<String, Object> row = new LinkedHashMap<>();
+    for (int i = 0; i < values.length; i += 2) {
+      row.put((String) values[i], values[i + 1]);
+    }
+    return row;
+  }
 
-  private static final class TimeoutHttpClient extends HttpClient {
-    private final HttpClient delegate = HttpClient.newHttpClient();
+  public static final class UserRow {
+    public long id;
+    public String name;
 
-    @Override
-    public Optional<CookieHandler> cookieHandler() {
-      return delegate.cookieHandler();
+    public UserRow() {}
+
+    UserRow(long id, String name) {
+      this.id = id;
+      this.name = name;
     }
 
     @Override
-    public Optional<Duration> connectTimeout() {
-      return delegate.connectTimeout();
+    public boolean equals(Object other) {
+      if (this == other) {
+        return true;
+      }
+      if (!(other instanceof UserRow)) {
+        return false;
+      }
+      UserRow that = (UserRow) other;
+      return id == that.id && Objects.equals(name, that.name);
     }
 
     @Override
-    public Redirect followRedirects() {
-      return delegate.followRedirects();
+    public int hashCode() {
+      return Objects.hash(id, name);
     }
 
     @Override
-    public Optional<ProxySelector> proxy() {
-      return delegate.proxy();
-    }
-
-    @Override
-    public SSLContext sslContext() {
-      return delegate.sslContext();
-    }
-
-    @Override
-    public SSLParameters sslParameters() {
-      return delegate.sslParameters();
-    }
-
-    @Override
-    public Optional<Authenticator> authenticator() {
-      return delegate.authenticator();
-    }
-
-    @Override
-    public Version version() {
-      return delegate.version();
-    }
-
-    @Override
-    public Optional<Executor> executor() {
-      return delegate.executor();
-    }
-
-    @Override
-    public <T> HttpResponse<T> send(HttpRequest request, HttpResponse.BodyHandler<T> responseBodyHandler)
-        throws IOException {
-      throw new HttpTimeoutException("timed out");
-    }
-
-    @Override
-    public <T> CompletableFuture<HttpResponse<T>> sendAsync(
-        HttpRequest request, HttpResponse.BodyHandler<T> responseBodyHandler) {
-      return CompletableFuture.failedFuture(new HttpTimeoutException("timed out"));
-    }
-
-    @Override
-    public <T> CompletableFuture<HttpResponse<T>> sendAsync(
-        HttpRequest request,
-        HttpResponse.BodyHandler<T> responseBodyHandler,
-        HttpResponse.PushPromiseHandler<T> pushPromiseHandler) {
-      return CompletableFuture.failedFuture(new HttpTimeoutException("timed out"));
-    }
-
-    @Override
-    public WebSocket.Builder newWebSocketBuilder() {
-      return delegate.newWebSocketBuilder();
+    public String toString() {
+      return "UserRow{id=" + id + ", name='" + name + "'}";
     }
   }
 }

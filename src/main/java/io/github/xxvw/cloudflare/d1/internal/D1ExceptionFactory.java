@@ -12,6 +12,7 @@ import io.github.xxvw.cloudflare.d1.D1ResponseInfo;
 import io.github.xxvw.cloudflare.d1.D1Result;
 import io.github.xxvw.cloudflare.d1.internal.dto.D1ApiResponseDto;
 import java.time.Duration;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -28,8 +29,7 @@ public final class D1ExceptionFactory {
 
   public D1ApiException httpException(D1HttpResponse response, D1Operation operation, String sql) {
     ParsedError parsed = parseError(response.body());
-    Optional<Duration> retryAfter = response.headers().firstValue("Retry-After")
-        .flatMap(retryAfterParser::parse);
+    Optional<Duration> retryAfter = parseRetryAfter(response.firstHeader("Retry-After"));
     return statusException(
         response.statusCode(),
         operation,
@@ -77,8 +77,8 @@ public final class D1ExceptionFactory {
     return new D1BatchException(
         statusCode,
         rawBody,
-        failed == null ? List.of() : failed.errors(),
-        failed == null ? List.of() : failed.messages(),
+        failed == null ? Collections.<D1ResponseInfo>emptyList() : failed.errors(),
+        failed == null ? Collections.<D1ResponseInfo>emptyList() : failed.messages(),
         failedIndex,
         results);
   }
@@ -91,13 +91,18 @@ public final class D1ExceptionFactory {
       List<D1ResponseInfo> messages,
       String sql,
       Duration retryAfter) {
-    return switch (statusCode) {
-      case 400 -> new D1QueryException(operation, statusCode, rawBody, errors, messages, sql);
-      case 401 -> new D1AuthenticationException(operation, statusCode, rawBody, errors, messages);
-      case 403 -> new D1AuthorizationException(operation, statusCode, rawBody, errors, messages);
-      case 429 -> new D1RateLimitException(operation, statusCode, rawBody, errors, messages, retryAfter);
-      default -> new D1ApiException("D1 API request failed", operation, statusCode, rawBody, errors, messages);
-    };
+    switch (statusCode) {
+      case 400:
+        return new D1QueryException(operation, statusCode, rawBody, errors, messages, sql);
+      case 401:
+        return new D1AuthenticationException(operation, statusCode, rawBody, errors, messages);
+      case 403:
+        return new D1AuthorizationException(operation, statusCode, rawBody, errors, messages);
+      case 429:
+        return new D1RateLimitException(operation, statusCode, rawBody, errors, messages, retryAfter);
+      default:
+        return new D1ApiException("D1 API request failed", operation, statusCode, rawBody, errors, messages);
+    }
   }
 
   private ParsedError parseError(String rawBody) {
@@ -105,9 +110,34 @@ public final class D1ExceptionFactory {
       D1ApiResponseDto apiResponse = jsonMapper.readApiResponse(rawBody);
       return new ParsedError(responseParser.topErrors(apiResponse), responseParser.topMessages(apiResponse));
     } catch (JsonProcessingException e) {
-      return new ParsedError(List.of(), List.of());
+      return new ParsedError(
+          Collections.<D1ResponseInfo>emptyList(),
+          Collections.<D1ResponseInfo>emptyList());
     }
   }
 
-  private record ParsedError(List<D1ResponseInfo> errors, List<D1ResponseInfo> messages) {}
+  private Optional<Duration> parseRetryAfter(String value) {
+    if (value == null) {
+      return Optional.empty();
+    }
+    return retryAfterParser.parse(value);
+  }
+
+  private static final class ParsedError {
+    private final List<D1ResponseInfo> errors;
+    private final List<D1ResponseInfo> messages;
+
+    private ParsedError(List<D1ResponseInfo> errors, List<D1ResponseInfo> messages) {
+      this.errors = errors;
+      this.messages = messages;
+    }
+
+    private List<D1ResponseInfo> errors() {
+      return errors;
+    }
+
+    private List<D1ResponseInfo> messages() {
+      return messages;
+    }
+  }
 }

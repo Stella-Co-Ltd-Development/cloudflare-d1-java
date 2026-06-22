@@ -20,7 +20,7 @@ public final class D1RetryAfterParser {
   }
 
   public Optional<Duration> parse(String value) {
-    if (value == null || value.isBlank()) {
+    if (value == null || value.trim().isEmpty()) {
       return Optional.empty();
     }
     String trimmed = value.trim();

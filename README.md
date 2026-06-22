@@ -10,11 +10,11 @@ It is a lightweight SDK for applications that need direct REST API access to D1.
 <dependency>
   <groupId>io.github.xxvw</groupId>
   <artifactId>cloudflare-d1-java</artifactId>
-  <version>0.1.0</version>
+  <version>0.1.1</version>
 </dependency>
 ```
 
-Java 17 or newer is required.
+Java 8 or newer is required.
 
 ## Quick Start
 
@@ -64,7 +64,11 @@ Parameters may be `String`, `Number`, `Boolean`, or `null`. Convert dates and JS
 ## Typed Query
 
 ```java
-record User(long id, String name, String email) {}
+public class User {
+  public long id;
+  public String name;
+  public String email;
+}
 
 List<User> users = d1.query(
     "SELECT id, name, email FROM users WHERE active = ?",
@@ -87,6 +91,24 @@ D1Client client = D1Client.builder()
 ```
 
 The custom mapper is used only for row-to-type mapping, not for internal D1 request or response parsing.
+
+## Custom Transport
+
+The default transport uses the Java standard library and does not add runtime dependencies. You may provide a custom transport:
+
+```java
+import java.util.Collections;
+
+D1Client client = D1Client.builder()
+    .accountId(System.getenv("CLOUDFLARE_ACCOUNT_ID"))
+    .databaseId(System.getenv("D1_DATABASE_ID"))
+    .apiToken(System.getenv("CLOUDFLARE_API_TOKEN"))
+    .transport(request -> {
+      // Execute request.uri(), request.method(), request.headers(), and request.body().
+      return new D1TransportResponse(200, Collections.emptyMap(), "{\"success\":true,\"result\":[]}");
+    })
+    .build();
+```
 
 ## queryFirst
 
@@ -171,7 +193,7 @@ D1RetryPolicy retryPolicy = D1RetryPolicy.none();
 
 ## Async Preview
 
-The async methods are preview APIs in `0.1.0` and are marked deprecated to avoid treating their signatures as stable:
+The async methods are preview APIs and are marked deprecated to avoid treating their signatures as stable:
 
 ```java
 CompletableFuture<D1Result> future = d1.queryAsync("SELECT 1");

@@ -43,8 +43,7 @@ public final class D1RetryExecutor {
 
   private Duration delayForAttempt(int retryAttempt, D1HttpResponse response) {
     if (retryPolicy.respectRetryAfter()) {
-      Optional<Duration> retryAfter = response.headers().firstValue("Retry-After")
-          .flatMap(retryAfterParser::parse);
+      Optional<Duration> retryAfter = parseRetryAfter(response.firstHeader("Retry-After"));
       if (retryAfter.isPresent()) {
         return retryAfter.get();
       }
@@ -58,6 +57,13 @@ public final class D1RetryExecutor {
     }
     long millis = calculatedDelay.toMillis();
     return Duration.ofMillis(ThreadLocalRandom.current().nextLong(millis + 1));
+  }
+
+  private Optional<Duration> parseRetryAfter(String value) {
+    if (value == null) {
+      return Optional.empty();
+    }
+    return retryAfterParser.parse(value);
   }
 
   private void sleep(D1Operation operation, Duration duration) {

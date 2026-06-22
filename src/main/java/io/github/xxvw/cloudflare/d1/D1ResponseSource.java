@@ -21,7 +21,7 @@ public final class D1ResponseSource {
   public D1ResponseSource(String pointer, Map<String, Object> additionalProperties) {
     this.pointer = pointer;
     this.additionalProperties = additionalProperties == null
-        ? Map.of()
+        ? Collections.<String, Object>emptyMap()
         : Collections.unmodifiableMap(new LinkedHashMap<>(additionalProperties));
   }
 

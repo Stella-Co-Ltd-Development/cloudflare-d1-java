@@ -1,5 +1,6 @@
 package io.github.xxvw.cloudflare.d1;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -13,6 +14,7 @@ public final class D1TimeoutException extends D1Exception {
    * @param cause timeout cause
    */
   public D1TimeoutException(D1Operation operation, Throwable cause) {
-    super("D1 request timed out", cause, operation, null, null, List.of(), List.of());
+    super("D1 request timed out", cause, operation, null, null,
+        Collections.<D1ResponseInfo>emptyList(), Collections.<D1ResponseInfo>emptyList());
   }
 }

@@ -32,7 +32,7 @@ public final class D1Query {
    * @return query object
    */
   public static D1Query of(String sql) {
-    return new D1Query(sql, List.of());
+    return new D1Query(sql, Collections.emptyList());
   }
 
   /**
@@ -80,7 +80,7 @@ public final class D1Query {
     if (sql == null) {
       throw new IllegalArgumentException("sql must not be null");
     }
-    if (sql.isBlank()) {
+    if (sql.trim().isEmpty()) {
       throw new IllegalArgumentException("sql must not be blank");
     }
     if (sql.getBytes(StandardCharsets.UTF_8).length > MAX_SQL_BYTES) {

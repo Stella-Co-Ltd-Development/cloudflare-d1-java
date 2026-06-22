@@ -7,6 +7,7 @@ import io.github.xxvw.cloudflare.d1.D1MappingException;
 import io.github.xxvw.cloudflare.d1.D1Query;
 import io.github.xxvw.cloudflare.d1.internal.dto.D1ApiResponseDto;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -58,7 +59,7 @@ public final class D1JsonMapper {
         throw new D1MappingException(type, i, row, e);
       }
     }
-    return List.copyOf(mapped);
+    return Collections.unmodifiableList(mapped);
   }
 
   public <T> T mapRow(Map<String, Object> row, Class<T> type, int rowIndex) {

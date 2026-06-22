@@ -26,10 +26,11 @@ public final class D1MappingException extends D1Exception {
    * @param cause mapping failure
    */
   public D1MappingException(Class<?> targetType, int rowIndex, Map<String, Object> row, Throwable cause) {
-    super("D1 row mapping failed", cause, D1Operation.QUERY, null, null, List.of(), List.of());
+    super("D1 row mapping failed", cause, D1Operation.QUERY, null, null,
+        Collections.<D1ResponseInfo>emptyList(), Collections.<D1ResponseInfo>emptyList());
     this.targetType = Objects.requireNonNull(targetType, "targetType must not be null");
     this.rowIndex = rowIndex;
-    this.row = row == null ? Map.of() : Collections.unmodifiableMap(new LinkedHashMap<>(row));
+    this.row = row == null ? Collections.<String, Object>emptyMap() : Collections.unmodifiableMap(new LinkedHashMap<>(row));
   }
 
   /**

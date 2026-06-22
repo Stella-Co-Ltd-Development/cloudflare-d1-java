@@ -3,21 +3,24 @@ package io.github.xxvw.cloudflare.d1;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import org.junit.jupiter.api.Test;
 
 class D1ExceptionTest {
 
   @Test
   void exceptionMetadataCollectionsAreImmutableAndMessagesDoNotExposeSensitiveValues() {
-    D1ResponseInfo error = new D1ResponseInfo(7500, "failed", null, null, Map.of());
+    D1ResponseInfo error = new D1ResponseInfo(7500, "failed", null, null, Collections.emptyMap());
     D1QueryException exception = new D1QueryException(
         D1Operation.QUERY,
         400,
         "{\"success\":false}",
-        List.of(error),
-        List.of(),
+        Collections.singletonList(error),
+        Collections.emptyList(),
         "SELECT * FROM users WHERE token = ?");
 
     assertThat(exception.operation()).contains(D1Operation.QUERY);
@@ -35,7 +38,7 @@ class D1ExceptionTest {
     D1MappingException exception = new D1MappingException(
         UserRow.class,
         2,
-        Map.of("name", "Taro"),
+        row("name", "Taro"),
         new IllegalArgumentException("bad row"));
 
     assertThat(exception.targetType()).isEqualTo(UserRow.class);
@@ -45,5 +48,33 @@ class D1ExceptionTest {
     assertThatThrownBy(() -> exception.row().put("id", 1)).isInstanceOf(UnsupportedOperationException.class);
   }
 
-  record UserRow(long id, String name) {}
+  private static Map<String, Object> row(String name, Object value) {
+    Map<String, Object> row = new LinkedHashMap<>();
+    row.put(name, value);
+    return row;
+  }
+
+  public static final class UserRow {
+    public long id;
+    public String name;
+
+    public UserRow() {}
+
+    @Override
+    public boolean equals(Object other) {
+      if (this == other) {
+        return true;
+      }
+      if (!(other instanceof UserRow)) {
+        return false;
+      }
+      UserRow that = (UserRow) other;
+      return id == that.id && Objects.equals(name, that.name);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(id, name);
+    }
+  }
 }

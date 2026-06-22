@@ -38,8 +38,12 @@ public final class D1Result {
     this.success = success;
     this.rows = immutableRows(rows);
     this.meta = meta == null ? D1Meta.empty() : meta;
-    this.messages = messages == null ? List.of() : List.copyOf(messages);
-    this.errors = errors == null ? List.of() : List.copyOf(errors);
+    this.messages = messages == null
+        ? Collections.<D1ResponseInfo>emptyList()
+        : Collections.unmodifiableList(new ArrayList<>(messages));
+    this.errors = errors == null
+        ? Collections.<D1ResponseInfo>emptyList()
+        : Collections.unmodifiableList(new ArrayList<>(errors));
     this.rawBody = rawBody;
   }
 
@@ -126,12 +130,12 @@ public final class D1Result {
 
   private static List<Map<String, Object>> immutableRows(List<Map<String, Object>> rows) {
     if (rows == null || rows.isEmpty()) {
-      return List.of();
+      return Collections.emptyList();
     }
     List<Map<String, Object>> copy = new ArrayList<>(rows.size());
     for (Map<String, Object> row : rows) {
       copy.add(Collections.unmodifiableMap(new LinkedHashMap<>(row)));
     }
-    return List.copyOf(copy);
+    return Collections.unmodifiableList(copy);
   }
 }

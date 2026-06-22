@@ -1,6 +1,8 @@
 package io.github.xxvw.cloudflare.d1;
 
 import java.time.Duration;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -41,7 +43,7 @@ public final class D1RetryPolicy {
   }
 
   /**
-   * Returns the default v0.1.0 retry policy.
+   * Returns the default retry policy.
    *
    * @return default retry policy
    */
@@ -160,11 +162,16 @@ public final class D1RetryPolicy {
    * @return true when retries are enabled for the operation
    */
   public boolean retries(D1Operation operation) {
-    return switch (operation) {
-      case QUERY -> retryQuery;
-      case EXECUTE -> retryExecute;
-      case BATCH -> retryBatch;
-    };
+    switch (operation) {
+      case QUERY:
+        return retryQuery;
+      case EXECUTE:
+        return retryExecute;
+      case BATCH:
+        return retryBatch;
+      default:
+        return false;
+    }
   }
 
   private static Duration requireNonNegative(Duration duration, String name) {
@@ -187,7 +194,7 @@ public final class D1RetryPolicy {
       }
       copy.add(statusCode);
     }
-    return Set.copyOf(copy);
+    return Collections.unmodifiableSet(copy);
   }
 
   /**
@@ -202,7 +209,8 @@ public final class D1RetryPolicy {
     private Duration maxDelay = Duration.ofSeconds(2);
     private boolean jitter = true;
     private boolean respectRetryAfter = true;
-    private Set<Integer> retryStatusCodes = Set.of(429, 500, 502, 503, 504);
+    private Set<Integer> retryStatusCodes =
+        new LinkedHashSet<>(Arrays.asList(429, 500, 502, 503, 504));
 
     private Builder() {}
 
