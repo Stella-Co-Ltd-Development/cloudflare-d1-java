@@ -21,7 +21,7 @@ The POM must include:
 
 ## GitHub Actions
 
-CI must test Java 17 and Java 21.
+CI must test Java 8, 11, 15, 17, and 21.
 
 Release workflow must publish to Maven Central on tags matching:
 
@@ -40,7 +40,7 @@ GPG_PASSPHRASE
 
 ## Release Checklist
 
-- CI passes on Java 17 and Java 21
+- CI passes on Java 8, 11, 15, 17, and 21
 - README is complete
 - CHANGELOG.md is updated
 - LICENSE exists
