@@ -50,6 +50,8 @@ class D1QueryTest {
         .isInstanceOf(IllegalArgumentException.class);
     assertThatThrownBy(() -> D1Query.of("SELECT ?", (Object) List.of("nested")))
         .isInstanceOf(IllegalArgumentException.class);
+    assertThatThrownBy(() -> D1Query.of("SELECT ?", new Object()))
+        .isInstanceOf(IllegalArgumentException.class);
   }
 
   @Test

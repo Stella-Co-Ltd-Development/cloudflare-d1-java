@@ -3,6 +3,8 @@ package io.github.xxvw.cloudflare.d1;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.net.Authenticator;
 import java.net.CookieHandler;
@@ -91,6 +93,21 @@ class D1ClientTest {
   }
 
   @Test
+  void queryWithListParamsAndExecuteUseExpectedRequestShape() throws Exception {
+    server.enqueue(ok(selectBody("[]", metaBody())));
+    server.enqueue(ok(selectBody("[]", metaBody())));
+    D1Client client = testClient();
+
+    client.query("SELECT * FROM users WHERE name = ? AND active = ?", List.of("Taro", true));
+    client.execute("UPDATE users SET active = ? WHERE id = ?", List.of(false, 1));
+
+    assertThat(server.takeRequest().getBody().utf8())
+        .isEqualTo("{\"sql\":\"SELECT * FROM users WHERE name = ? AND active = ?\",\"params\":[\"Taro\",true]}");
+    assertThat(server.takeRequest().getBody().utf8())
+        .isEqualTo("{\"sql\":\"UPDATE users SET active = ? WHERE id = ?\",\"params\":[false,1]}");
+  }
+
+  @Test
   void executeReturnsInsertMetadata() {
     server.enqueue(ok(selectBody("[]", """
         {"changed_db":true,"changes":1,"last_row_id":42,"rows_read":0,"rows_written":1,"duration":2.5}
@@ -121,6 +138,35 @@ class D1ClientTest {
   }
 
   @Test
+  void emptyResultArrayReturnsEmptyRowsAndInvalidJsonThrowsApiException() {
+    server.enqueue(ok("{\"success\":true,\"result\":[],\"errors\":[],\"messages\":[]}"));
+    server.enqueue(ok("not-json"));
+    D1Client client = testClient();
+
+    assertThat(client.query("SELECT 1").rows()).isEmpty();
+    assertThatThrownBy(() -> client.query("SELECT 1"))
+        .isInstanceOfSatisfying(D1ApiException.class,
+            exception -> assertThat(exception.rawBody()).contains("not-json"));
+  }
+
+  @Test
+  void responseMessagesAndBatchListResultsAreImmutable() {
+    server.enqueue(ok("""
+        {"success":true,"result":[{"success":true,"results":[],"meta":{},"messages":[{"code":10,"message":"item"}]}],
+        "errors":[],"messages":[{"code":1,"message":"top"}]}
+        """));
+    D1Client client = testClient();
+
+    List<D1Result> results = client.batch(List.of(D1Query.of("SELECT 1")));
+
+    assertThat(results).hasSize(1);
+    assertThat(results.get(0).messages()).extracting(D1ResponseInfo::code).containsExactly(1, 10);
+    assertThatThrownBy(() -> results.add(results.get(0))).isInstanceOf(UnsupportedOperationException.class);
+    assertThatThrownBy(() -> results.get(0).messages().add(new D1ResponseInfo(2, "x", null, null, Map.of())))
+        .isInstanceOf(UnsupportedOperationException.class);
+  }
+
+  @Test
   void typedQueryMapsRowsAndIgnoresUnknownProperties() {
     server.enqueue(ok(selectBody("[{\"id\":1,\"name\":\"Taro\",\"unknown\":\"ignored\"}]", metaBody())));
     D1Client client = testClient();
@@ -142,6 +188,29 @@ class D1ClientTest {
           assertThat(exception.row()).containsEntry("name", "Taro");
           assertThat(exception.getMessage()).doesNotContain("Taro");
         });
+  }
+
+  @Test
+  void customMappingObjectMapperDoesNotAffectInternalResponseParsing() {
+    server.enqueue(ok("""
+        {"success":true,"result":[{"success":true,"results":[{"id":1,"name":"Taro","unknown":"value"}],"meta":{},"extra":"ok"}],
+        "errors":[],"messages":[],"top_extra":true}
+        """));
+    server.enqueue(ok(selectBody("[{\"id\":1,\"name\":\"Taro\",\"unknown\":\"value\"}]", metaBody())));
+    ObjectMapper strictMapper = new ObjectMapper()
+        .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true);
+    D1Client client = D1Client.builder()
+        .accountId("test-account-id")
+        .databaseId("test-database-id")
+        .apiToken("test-token")
+        .baseUrl(server.url("/client/v4").uri())
+        .retryPolicy(D1RetryPolicy.none())
+        .objectMapper(strictMapper)
+        .build();
+
+    assertThat(client.query("SELECT id, name FROM users").rowCount()).isEqualTo(1);
+    assertThatThrownBy(() -> client.query("SELECT id, name FROM users", UserRow.class))
+        .isInstanceOf(D1MappingException.class);
   }
 
   @Test
@@ -223,6 +292,7 @@ class D1ClientTest {
     server.enqueue(new MockResponse.Builder().code(500).body("{\"success\":false}").build());
     server.enqueue(ok(selectBody("[{\"id\":1,\"name\":\"Taro\"}]", metaBody())));
     server.enqueue(new MockResponse.Builder().code(500).body("{\"success\":false}").build());
+    server.enqueue(new MockResponse.Builder().code(500).body("{\"success\":false}").build());
     D1RetryPolicy policy = D1RetryPolicy.builder()
         .baseDelay(Duration.ZERO)
         .maxDelay(Duration.ZERO)
@@ -234,7 +304,30 @@ class D1ClientTest {
     assertThat(client.query("SELECT 1").rowCount()).isEqualTo(1);
     assertThatThrownBy(() -> client.execute("UPDATE users SET name = ?", "Taro"))
         .isInstanceOf(D1ApiException.class);
-    assertThat(server.getRequestCount()).isEqualTo(3);
+    assertThatThrownBy(() -> client.batch(D1Query.of("SELECT 1")))
+        .isInstanceOf(D1ApiException.class);
+    assertThat(server.getRequestCount()).isEqualTo(4);
+  }
+
+  @Test
+  void retryStopsAfterMaxRetriesSkipsNonRetryableStatusAndFallsBackForInvalidRetryAfter() {
+    server.enqueue(new MockResponse.Builder().code(500).body("{\"success\":false}").build());
+    server.enqueue(new MockResponse.Builder().code(500).body("{\"success\":false}").build());
+    server.enqueue(new MockResponse.Builder().code(418).body("{\"success\":false}").build());
+    server.enqueue(new MockResponse.Builder().code(500).setHeader("Retry-After", "invalid").body("{\"success\":false}").build());
+    server.enqueue(ok(selectBody("[]", metaBody())));
+    D1RetryPolicy policy = D1RetryPolicy.builder()
+        .baseDelay(Duration.ZERO)
+        .maxDelay(Duration.ZERO)
+        .jitter(false)
+        .maxRetries(1)
+        .build();
+    D1Client client = testClient(policy);
+
+    assertThatThrownBy(() -> client.query("SELECT 1")).isInstanceOf(D1ApiException.class);
+    assertThatThrownBy(() -> client.query("SELECT 1")).isInstanceOf(D1ApiException.class);
+    assertThat(client.query("SELECT 1").success()).isTrue();
+    assertThat(server.getRequestCount()).isEqualTo(5);
   }
 
   @Test
