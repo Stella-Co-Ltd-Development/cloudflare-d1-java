@@ -44,7 +44,7 @@ io.github.xxvw.cloudflare.d1
 Minimum supported Java version:
 
 ```text
-Java 17
+Java 8 or newer
 ```
 
 ## Runtime Dependency

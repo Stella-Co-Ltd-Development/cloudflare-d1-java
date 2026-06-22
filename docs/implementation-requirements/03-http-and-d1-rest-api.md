@@ -25,15 +25,15 @@ Rules:
 
 ## HTTP Client
 
-Use Java 17 standard HTTP client:
+Use Java standard library HTTP APIs for the default transport:
 
 ```java
-java.net.http.HttpClient
+java.net.HttpURLConnection
 ```
 
 Rules:
 
-- A custom `HttpClient` can be provided by `D1ClientBuilder`.
+- A custom `D1Transport` can be provided by `D1ClientBuilder`.
 - Request timeout is applied per request.
 - Connect timeout is used when the default client is created.
 - No third-party HTTP client dependency is allowed in v0.1.0.

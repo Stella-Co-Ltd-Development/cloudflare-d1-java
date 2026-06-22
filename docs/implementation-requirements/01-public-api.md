@@ -53,7 +53,7 @@ public final class D1ClientBuilder {
     public D1ClientBuilder requestTimeout(Duration requestTimeout);
 
     public D1ClientBuilder retryPolicy(D1RetryPolicy retryPolicy);
-    public D1ClientBuilder httpClient(HttpClient httpClient);
+    public D1ClientBuilder transport(D1Transport transport);
     public D1ClientBuilder objectMapper(ObjectMapper objectMapper);
 
     public D1Client build();

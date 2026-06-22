@@ -10,7 +10,7 @@ It is designed as a lightweight SDK for Java applications that need to call the 
 
 - Provide a simple Java API for Cloudflare D1 REST API access.
 - Support query, execute, batch, typed query, and queryFirst operations.
-- Use Java 17 standard `HttpClient` for HTTP.
+- Use Java standard library HTTP APIs for the default transport.
 - Use Jackson for JSON parsing and typed row mapping.
 - Keep runtime dependencies minimal.
 - Preserve Cloudflare D1 response metadata.
@@ -43,7 +43,7 @@ It is designed as a lightweight SDK for Java applications that need to call the 
 Minimum supported Java version:
 
 ```text
-Java 17
+Java 8 or newer
 ```
 
 ## Package Layout
@@ -77,7 +77,7 @@ com.fasterxml.jackson.core:jackson-databind
 HTTP must use:
 
 ```text
-java.net.http.HttpClient
+Java standard library HTTP APIs
 ```
 
 Retry behavior must be implemented internally.
