@@ -6,7 +6,7 @@ For v0.1.0, the only runtime dependency should be:
 
 - `jackson-databind`
 
-HTTP must use Java 17 standard `java.net.http.HttpClient`.
+HTTP must use Java standard library APIs for the default transport.
 
 Retry behavior must be implemented internally.
 

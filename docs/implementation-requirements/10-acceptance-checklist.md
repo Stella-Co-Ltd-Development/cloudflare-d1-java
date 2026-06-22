@@ -78,8 +78,8 @@
 
 ## Build and Test
 
-- [ ] `mvn clean verify` passes on Java 17.
-- [ ] `mvn clean verify` passes on Java 21.
+- [ ] `mvn clean verify` passes with Java 8-compatible output.
+- [ ] `mvn clean verify` passes on Java 8, 11, 15, 17, and 21.
 - [ ] Javadocs build.
 - [ ] Sources jar builds.
 - [ ] Release profile signs artifacts.
