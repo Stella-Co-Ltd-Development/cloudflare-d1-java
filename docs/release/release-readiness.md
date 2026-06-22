@@ -1,15 +1,17 @@
-# v0.1.0 Release Readiness
+# Release Readiness
 
-This checklist prepares the project for a future v0.1.0 release review. It does not publish
-artifacts, create a tag, or change the project version.
+This checklist prepares the project for a future release review. It does not publish artifacts,
+create a tag, or change the project version.
 
 ## Current Version
 
 ```text
-0.1.0-SNAPSHOT
+0.1.1
 ```
 
-The version must remain `0.1.0-SNAPSHOT` until the maintainer starts the actual release process.
+The next release version should be chosen by maintainers according to Semantic Versioning. Do not
+change `pom.xml`, `README.md`, `CHANGELOG.md`, or `D1Version` until a dedicated release pull request
+is opened.
 
 ## Required Validations
 
@@ -20,8 +22,8 @@ mvn -B clean verify
 mvn -B -Prelease -Dgpg.skip=true verify
 ```
 
-The release profile command must build the main jar, sources jar, and javadoc jar. A real release
-run must not use `-Dgpg.skip=true`.
+The release profile command must build the main jar, sources jar, and javadoc jar. A real release run
+must not use `-Dgpg.skip=true`.
 
 ## Maven Central Prerequisites
 
@@ -52,35 +54,39 @@ The release workflow runs for tags matching:
 v*
 ```
 
-The workflow should use Java 17 and publish through Maven Central Portal with:
+The workflow should use Java 17 for the publish job and deploy through Maven Central Portal with:
 
 ```bash
 mvn -B clean deploy -Prelease
 ```
 
+Review the current Maven Central publishing plugin settings before tagging so the intended publish
+safety model is clear.
+
 ## Tag Command For Later
 
-After maintainers approve the release, update the version to `0.1.0`, update `CHANGELOG.md`, commit
-the release changes, and create the release tag:
+After maintainers approve the release, update all version references, update `CHANGELOG.md`, commit
+the release changes, and create a tag that matches the release version:
 
 ```bash
-git tag v0.1.0
-git push origin v0.1.0
+git tag vX.Y.Z
+git push origin vX.Y.Z
 ```
 
-Do not create this tag during release-readiness review.
+Do not create a release tag during release-readiness review.
 
 ## Pre-Release Checklist
 
 - [ ] Confirm `main` is clean and up to date.
 - [ ] Confirm all open pull requests that should be included are merged.
-- [ ] Confirm CI passes on Java 17 and Java 21.
+- [ ] Confirm CI passes on Java 8, 11, 15, 17, and 21.
 - [ ] Confirm `mvn -B clean verify` passes locally.
 - [ ] Confirm `mvn -B -Prelease -Dgpg.skip=true verify` passes locally.
 - [ ] Confirm javadocs do not expose internal implementation packages.
 - [ ] Confirm test fixtures use only fake token, account, and database values.
 - [ ] Confirm no secret values are present in documentation, tests, or workflow files.
 - [ ] Confirm Maven Central credentials and signing secrets are configured.
-- [ ] Update version from `0.1.0-SNAPSHOT` to `0.1.0` only in the release pull request.
-- [ ] Move changelog entries from `Unreleased` to `0.1.0` only in the release pull request.
-- [ ] Create and push `v0.1.0` only after the release pull request is merged.
+- [ ] Confirm Maven Central publishing settings match the intended release safety model.
+- [ ] Update version references only in the release pull request.
+- [ ] Move changelog entries from `Unreleased` to the selected release version only in the release pull request.
+- [ ] Create and push the release tag only after the release pull request is merged.
