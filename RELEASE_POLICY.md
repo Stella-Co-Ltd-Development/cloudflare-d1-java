@@ -22,6 +22,13 @@ Maven Central publishing must be performed through GitHub Actions.
 
 Local manual publishing is discouraged.
 
+The release workflow must upload the deployment with automatic Maven Central publication disabled.
+Maintainers should review and publish the uploaded deployment from Maven Central after the workflow
+succeeds.
+
+The release workflow should use the `maven-central` environment so maintainers can add environment
+protection rules before publishing credentials are used.
+
 ## Required Artifacts
 
 Release artifacts must include:
@@ -46,6 +53,8 @@ Before publishing:
 - Artifacts are signed
 - Maven Central namespace is verified
 - GitHub secrets are configured
+- The `maven-central` environment protection rules are reviewed
+- The Maven Central deployment is reviewed before publication
 - Version is changed from `0.1.0-SNAPSHOT` to `0.1.0`
 - Git tag is created
 
