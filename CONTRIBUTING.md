@@ -88,7 +88,7 @@ Do not include AI tool names, assistant names, or generation metadata in commit 
 
 ## Development Requirements
 
-- Java 17 or later
+- Java 8 or later
 - Maven 3.9 or later
 
 ## Build
