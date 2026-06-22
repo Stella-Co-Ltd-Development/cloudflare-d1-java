@@ -6,7 +6,7 @@ This task plan is intended for v0.1.0 implementation.
 
 Acceptance criteria:
 
-- Maven project compiles on Java 17.
+- Maven project compiles for Java 8-compatible output.
 - Dependencies are declared.
 - `mvn clean verify` succeeds.
 - Maven metadata is ready for Maven Central.
@@ -80,7 +80,7 @@ Acceptance criteria:
 
 Acceptance criteria:
 
-- Requests use Java HttpClient.
+- Requests use the Java standard library default transport.
 - Headers are correct.
 - Request body shape is correct.
 - Transport and timeout errors are mapped.
