@@ -37,3 +37,8 @@ Additional test dependencies may be added when justified, but they should still 
 Dependabot pull requests must pass CI before merge.
 
 Major dependency updates require manual review.
+
+## GitHub Actions
+
+Workflow actions should be pinned to full commit SHAs. Keep the source version tag in a comment next
+to the pinned action so reviewers can compare Dependabot updates with the upstream release line.
