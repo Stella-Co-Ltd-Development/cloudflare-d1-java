@@ -93,7 +93,7 @@ CI workflow:
 
 - run on pull requests
 - run on pushes to `main`
-- test Java 17 and Java 21
+- test Java 8, 11, 15, 17, and 21
 - run `mvn -B clean verify`
 
 Release workflow:
@@ -117,7 +117,7 @@ GPG_PASSPHRASE
 
 ## Release Checklist
 
-- CI passes on Java 17 and Java 21
+- CI passes on Java 8, 11, 15, 17, and 21
 - README is complete
 - CHANGELOG.md is updated
 - LICENSE exists

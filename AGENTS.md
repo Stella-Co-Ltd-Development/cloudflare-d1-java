@@ -81,7 +81,7 @@ Rules:
 
 - Do not expose internal DTOs or helper classes as public API.
 - Keep public APIs stable and minimal.
-- Use Java 17-compatible APIs only.
+- Use Java 8-compatible APIs only.
 - Public model classes should be immutable where designed.
 - Public collections returned by model classes must be immutable.
 - Do not leak mutable internal state.
@@ -105,7 +105,7 @@ Rules:
 - Do not add new runtime dependencies without an issue and explicit maintainer approval.
 - Dependency licenses must be reviewed before adoption.
 - Runtime dependencies must be compatible with Apache License 2.0.
-- Use `java.net.http.HttpClient` for HTTP.
+- Use Java standard library HTTP APIs for the default transport.
 - Implement retry behavior internally.
 - Do not add logging dependencies in v0.1.0.
 
