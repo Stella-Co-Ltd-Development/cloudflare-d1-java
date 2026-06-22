@@ -7,6 +7,9 @@ import java.util.Set;
 
 /**
  * Retry policy for D1 operations.
+ *
+ * <p>The default policy retries read-style query operations on common transient HTTP statuses.
+ * Execute and batch operations do not retry by default.
  */
 public final class D1RetryPolicy {
   private final boolean retryQuery;
@@ -37,10 +40,20 @@ public final class D1RetryPolicy {
     this.retryStatusCodes = validateStatusCodes(builder.retryStatusCodes);
   }
 
+  /**
+   * Returns the default v0.1.0 retry policy.
+   *
+   * @return default retry policy
+   */
   public static D1RetryPolicy defaultPolicy() {
     return builder().build();
   }
 
+  /**
+   * Returns a policy with retries disabled.
+   *
+   * @return no-retry policy
+   */
   public static D1RetryPolicy none() {
     return builder()
         .retryQuery(false)
@@ -50,46 +63,102 @@ public final class D1RetryPolicy {
         .build();
   }
 
+  /**
+   * Creates a retry policy builder.
+   *
+   * @return a new builder
+   */
   public static Builder builder() {
     return new Builder();
   }
 
+  /**
+   * Whether query operations may be retried.
+   *
+   * @return true when query retries are enabled
+   */
   public boolean retryQuery() {
     return retryQuery;
   }
 
+  /**
+   * Whether execute operations may be retried.
+   *
+   * @return true when execute retries are enabled
+   */
   public boolean retryExecute() {
     return retryExecute;
   }
 
+  /**
+   * Whether batch operations may be retried.
+   *
+   * @return true when batch retries are enabled
+   */
   public boolean retryBatch() {
     return retryBatch;
   }
 
+  /**
+   * Maximum number of retry attempts after the initial request.
+   *
+   * @return maximum retry count
+   */
   public int maxRetries() {
     return maxRetries;
   }
 
+  /**
+   * Base delay used for exponential backoff.
+   *
+   * @return base delay
+   */
   public Duration baseDelay() {
     return baseDelay;
   }
 
+  /**
+   * Maximum delay used for exponential backoff.
+   *
+   * @return maximum delay
+   */
   public Duration maxDelay() {
     return maxDelay;
   }
 
+  /**
+   * Whether full jitter is applied to calculated backoff delays.
+   *
+   * @return true when jitter is enabled
+   */
   public boolean jitter() {
     return jitter;
   }
 
+  /**
+   * Whether valid Retry-After response headers take priority over backoff delays.
+   *
+   * @return true when Retry-After is respected
+   */
   public boolean respectRetryAfter() {
     return respectRetryAfter;
   }
 
+  /**
+   * HTTP status codes eligible for retry.
+   *
+   * @return immutable status code set
+   */
   public Set<Integer> retryStatusCodes() {
     return retryStatusCodes;
   }
 
+  /**
+   * Returns whether the operation category may retry under this policy.
+   *
+   * @param operation operation category
+   * @return true when retries are enabled for the operation
+   */
   public boolean retries(D1Operation operation) {
     return switch (operation) {
       case QUERY -> retryQuery;
@@ -121,6 +190,9 @@ public final class D1RetryPolicy {
     return Set.copyOf(copy);
   }
 
+  /**
+   * Builder for {@link D1RetryPolicy}.
+   */
   public static final class Builder {
     private boolean retryQuery = true;
     private boolean retryExecute;
@@ -134,51 +206,110 @@ public final class D1RetryPolicy {
 
     private Builder() {}
 
+    /**
+     * Enables or disables query retries.
+     *
+     * @param retryQuery whether query retries are enabled
+     * @return this builder
+     */
     public Builder retryQuery(boolean retryQuery) {
       this.retryQuery = retryQuery;
       return this;
     }
 
+    /**
+     * Enables or disables execute retries.
+     *
+     * @param retryExecute whether execute retries are enabled
+     * @return this builder
+     */
     public Builder retryExecute(boolean retryExecute) {
       this.retryExecute = retryExecute;
       return this;
     }
 
+    /**
+     * Enables or disables batch retries.
+     *
+     * @param retryBatch whether batch retries are enabled
+     * @return this builder
+     */
     public Builder retryBatch(boolean retryBatch) {
       this.retryBatch = retryBatch;
       return this;
     }
 
+    /**
+     * Sets the maximum retry count.
+     *
+     * @param maxRetries non-negative retry count
+     * @return this builder
+     */
     public Builder maxRetries(int maxRetries) {
       this.maxRetries = maxRetries;
       return this;
     }
 
+    /**
+     * Sets the base backoff delay.
+     *
+     * @param baseDelay non-negative base delay
+     * @return this builder
+     */
     public Builder baseDelay(Duration baseDelay) {
       this.baseDelay = baseDelay;
       return this;
     }
 
+    /**
+     * Sets the maximum backoff delay.
+     *
+     * @param maxDelay non-negative maximum delay
+     * @return this builder
+     */
     public Builder maxDelay(Duration maxDelay) {
       this.maxDelay = maxDelay;
       return this;
     }
 
+    /**
+     * Enables or disables full jitter.
+     *
+     * @param jitter whether jitter is enabled
+     * @return this builder
+     */
     public Builder jitter(boolean jitter) {
       this.jitter = jitter;
       return this;
     }
 
+    /**
+     * Enables or disables Retry-After handling.
+     *
+     * @param respectRetryAfter whether Retry-After is respected
+     * @return this builder
+     */
     public Builder respectRetryAfter(boolean respectRetryAfter) {
       this.respectRetryAfter = respectRetryAfter;
       return this;
     }
 
+    /**
+     * Sets retryable HTTP status codes.
+     *
+     * @param retryStatusCodes non-empty set of status codes from 100 through 599
+     * @return this builder
+     */
     public Builder retryStatusCodes(Set<Integer> retryStatusCodes) {
       this.retryStatusCodes = retryStatusCodes;
       return this;
     }
 
+    /**
+     * Builds the retry policy.
+     *
+     * @return retry policy
+     */
     public D1RetryPolicy build() {
       return new D1RetryPolicy(this);
     }

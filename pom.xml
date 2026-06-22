@@ -109,6 +109,12 @@
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-javadoc-plugin</artifactId>
           <version>${maven-javadoc-plugin.version}</version>
+          <configuration>
+            <excludePackageNames>io.github.xxvw.cloudflare.d1.internal.*</excludePackageNames>
+            <sourceFileExcludes>
+              <sourceFileExclude>**/internal/**</sourceFileExclude>
+            </sourceFileExcludes>
+          </configuration>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -158,6 +164,13 @@
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-javadoc-plugin</artifactId>
+            <configuration>
+              <show>public</show>
+              <excludePackageNames>io.github.xxvw.cloudflare.d1.internal.*</excludePackageNames>
+              <sourceFileExcludes>
+                <sourceFileExclude>**/internal/**</sourceFileExclude>
+              </sourceFileExcludes>
+            </configuration>
             <executions>
               <execution>
                 <id>attach-javadocs</id>

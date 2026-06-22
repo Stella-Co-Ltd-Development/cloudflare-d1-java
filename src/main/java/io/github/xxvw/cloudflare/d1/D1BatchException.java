@@ -6,9 +6,21 @@ import java.util.List;
  * D1 batch failure.
  */
 public final class D1BatchException extends D1ApiException {
+  /** Index of the first failed batch item. */
   private final int failedIndex;
+  /** Result items returned by the API. */
   private final List<D1Result> partialResults;
 
+  /**
+   * Creates a batch exception.
+   *
+   * @param statusCode HTTP status code
+   * @param rawBody raw HTTP response body
+   * @param errors API errors for the failed item
+   * @param messages API messages for the failed item
+   * @param failedIndex index of the first failed batch item
+   * @param partialResults result items returned before failure handling
+   */
   public D1BatchException(
       Integer statusCode,
       String rawBody,
@@ -21,10 +33,20 @@ public final class D1BatchException extends D1ApiException {
     this.partialResults = partialResults == null ? List.of() : List.copyOf(partialResults);
   }
 
+  /**
+   * Index of the first failed batch item.
+   *
+   * @return failed item index
+   */
   public int failedIndex() {
     return failedIndex;
   }
 
+  /**
+   * Result items returned by the API.
+   *
+   * @return immutable partial results
+   */
   public List<D1Result> partialResults() {
     return partialResults;
   }
