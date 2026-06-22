@@ -15,6 +15,15 @@ public final class D1ResponseInfo {
   private final D1ResponseSource source;
   private final Map<String, Object> additionalProperties;
 
+  /**
+   * Creates a response information model.
+   *
+   * @param code response code
+   * @param message response message
+   * @param documentationUrl documentation URL, if present
+   * @param source source location, if present
+   * @param additionalProperties unknown response fields
+   */
   public D1ResponseInfo(
       int code,
       String message,
@@ -30,22 +39,47 @@ public final class D1ResponseInfo {
         : Collections.unmodifiableMap(new LinkedHashMap<>(additionalProperties));
   }
 
+  /**
+   * Response code.
+   *
+   * @return response code
+   */
   public int code() {
     return code;
   }
 
+  /**
+   * Response message.
+   *
+   * @return response message
+   */
   public String message() {
     return message;
   }
 
+  /**
+   * Documentation URL supplied by the API.
+   *
+   * @return documentation URL or empty
+   */
   public Optional<String> documentationUrl() {
     return Optional.ofNullable(documentationUrl);
   }
 
+  /**
+   * Source location supplied by the API.
+   *
+   * @return source location or empty
+   */
   public Optional<D1ResponseSource> source() {
     return Optional.ofNullable(source);
   }
 
+  /**
+   * Unknown response fields preserved from the API response.
+   *
+   * @return immutable additional properties
+   */
   public Map<String, Object> additionalProperties() {
     return additionalProperties;
   }

@@ -8,12 +8,28 @@ import java.util.OptionalInt;
  * Base unchecked exception for D1 client failures.
  */
 public class D1Exception extends RuntimeException {
+  /** Operation being performed when the failure happened. */
   private final D1Operation operation;
+  /** HTTP status code returned by the API. */
   private final Integer statusCode;
+  /** Raw HTTP response body. */
   private final String rawBody;
+  /** API error details. */
   private final List<D1ResponseInfo> errors;
+  /** API informational messages. */
   private final List<D1ResponseInfo> messages;
 
+  /**
+   * Creates a D1 exception.
+   *
+   * @param message exception message
+   * @param cause root cause
+   * @param operation operation being performed, if available
+   * @param statusCode HTTP status code, if available
+   * @param rawBody raw HTTP response body, if available
+   * @param errors API errors
+   * @param messages API messages
+   */
   public D1Exception(
       String message,
       Throwable cause,
@@ -30,22 +46,47 @@ public class D1Exception extends RuntimeException {
     this.messages = messages == null ? List.of() : List.copyOf(messages);
   }
 
+  /**
+   * Operation being performed when the failure happened.
+   *
+   * @return operation or empty
+   */
   public Optional<D1Operation> operation() {
     return Optional.ofNullable(operation);
   }
 
+  /**
+   * HTTP status code returned by the API.
+   *
+   * @return status code or empty
+   */
   public OptionalInt statusCode() {
     return statusCode == null ? OptionalInt.empty() : OptionalInt.of(statusCode);
   }
 
+  /**
+   * Raw HTTP response body.
+   *
+   * @return raw body or empty
+   */
   public Optional<String> rawBody() {
     return Optional.ofNullable(rawBody);
   }
 
+  /**
+   * API error details.
+   *
+   * @return immutable error list
+   */
   public List<D1ResponseInfo> errors() {
     return errors;
   }
 
+  /**
+   * API informational messages.
+   *
+   * @return immutable message list
+   */
   public List<D1ResponseInfo> messages() {
     return messages;
   }

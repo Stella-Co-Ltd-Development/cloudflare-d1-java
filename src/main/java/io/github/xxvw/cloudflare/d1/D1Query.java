@@ -9,6 +9,9 @@ import java.util.Objects;
 
 /**
  * Immutable SQL statement and positional parameter list.
+ *
+ * <p>Parameters may be strings, numbers, booleans, or null values. Other types should be converted
+ * by callers before creating a query.
  */
 public final class D1Query {
   private static final int MAX_SQL_BYTES = 100 * 1024;
@@ -22,23 +25,53 @@ public final class D1Query {
     this.params = validateParams(params);
   }
 
+  /**
+   * Creates a query without positional parameters.
+   *
+   * @param sql SQL text
+   * @return query object
+   */
   public static D1Query of(String sql) {
     return new D1Query(sql, List.of());
   }
 
+  /**
+   * Creates a query with positional parameters.
+   *
+   * @param sql SQL text
+   * @param params positional parameter values
+   * @return query object
+   */
   public static D1Query of(String sql, Object... params) {
     Objects.requireNonNull(params, "params must not be null");
     return new D1Query(sql, Arrays.asList(params));
   }
 
+  /**
+   * Creates a query with positional parameters.
+   *
+   * @param sql SQL text
+   * @param params positional parameter values
+   * @return query object
+   */
   public static D1Query of(String sql, List<?> params) {
     return new D1Query(sql, params);
   }
 
+  /**
+   * Returns the SQL text.
+   *
+   * @return SQL text
+   */
   public String sql() {
     return sql;
   }
 
+  /**
+   * Returns immutable positional parameter values.
+   *
+   * @return immutable parameter list
+   */
   public List<Object> params() {
     return params;
   }

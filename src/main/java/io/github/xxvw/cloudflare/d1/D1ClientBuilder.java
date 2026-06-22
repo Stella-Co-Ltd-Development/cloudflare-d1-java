@@ -13,6 +13,9 @@ import java.util.Objects;
 
 /**
  * Builder for {@link D1Client}.
+ *
+ * <p>Account ID, database ID, and API token are required. Optional settings provide custom
+ * endpoint, timeout, retry, HTTP client, and typed row mapping behavior.
  */
 public final class D1ClientBuilder {
   private static final URI DEFAULT_BASE_URL = URI.create("https://api.cloudflare.com/client/v4");
@@ -32,62 +35,133 @@ public final class D1ClientBuilder {
 
   D1ClientBuilder() {}
 
+  /**
+   * Sets the Cloudflare account ID.
+   *
+   * @param accountId account ID
+   * @return this builder
+   */
   public D1ClientBuilder accountId(String accountId) {
     this.accountId = requireText(accountId, "accountId");
     return this;
   }
 
+  /**
+   * Sets the Cloudflare D1 database ID.
+   *
+   * @param databaseId database ID
+   * @return this builder
+   */
   public D1ClientBuilder databaseId(String databaseId) {
     this.databaseId = requireText(databaseId, "databaseId");
     return this;
   }
 
+  /**
+   * Sets the Cloudflare API token used for Authorization.
+   *
+   * @param apiToken API token
+   * @return this builder
+   */
   public D1ClientBuilder apiToken(String apiToken) {
     this.apiToken = requireText(apiToken, "apiToken");
     return this;
   }
 
+  /**
+   * Sets the Cloudflare API base URL.
+   *
+   * @param baseUrl absolute base URL
+   * @return this builder
+   */
   public D1ClientBuilder baseUrl(String baseUrl) {
     requireText(baseUrl, "baseUrl");
     this.baseUrl = URI.create(baseUrl);
     return this;
   }
 
+  /**
+   * Sets the Cloudflare API base URL.
+   *
+   * @param baseUrl absolute base URL
+   * @return this builder
+   */
   public D1ClientBuilder baseUrl(URI baseUrl) {
     this.baseUrl = Objects.requireNonNull(baseUrl, "baseUrl must not be null");
     return this;
   }
 
+  /**
+   * Sets the User-Agent header value.
+   *
+   * @param userAgent User-Agent header value
+   * @return this builder
+   */
   public D1ClientBuilder userAgent(String userAgent) {
     this.userAgent = requireText(userAgent, "userAgent");
     return this;
   }
 
+  /**
+   * Sets the connection timeout for the default HTTP client.
+   *
+   * @param connectTimeout non-negative timeout
+   * @return this builder
+   */
   public D1ClientBuilder connectTimeout(Duration connectTimeout) {
     this.connectTimeout = requireNonNegative(connectTimeout, "connectTimeout");
     return this;
   }
 
+  /**
+   * Sets the per-request timeout.
+   *
+   * @param requestTimeout non-negative timeout
+   * @return this builder
+   */
   public D1ClientBuilder requestTimeout(Duration requestTimeout) {
     this.requestTimeout = requireNonNegative(requestTimeout, "requestTimeout");
     return this;
   }
 
+  /**
+   * Sets the retry policy used by client operations.
+   *
+   * @param retryPolicy retry policy
+   * @return this builder
+   */
   public D1ClientBuilder retryPolicy(D1RetryPolicy retryPolicy) {
     this.retryPolicy = Objects.requireNonNull(retryPolicy, "retryPolicy must not be null");
     return this;
   }
 
+  /**
+   * Sets a custom Java HTTP client.
+   *
+   * @param httpClient HTTP client
+   * @return this builder
+   */
   public D1ClientBuilder httpClient(HttpClient httpClient) {
     this.httpClient = Objects.requireNonNull(httpClient, "httpClient must not be null");
     return this;
   }
 
+  /**
+   * Sets the ObjectMapper used only for typed row mapping.
+   *
+   * @param objectMapper mapper for row-to-type conversion
+   * @return this builder
+   */
   public D1ClientBuilder objectMapper(ObjectMapper objectMapper) {
     this.objectMapper = Objects.requireNonNull(objectMapper, "objectMapper must not be null");
     return this;
   }
 
+  /**
+   * Builds a configured D1 client.
+   *
+   * @return configured client
+   */
   public D1Client build() {
     requireText(accountId, "accountId");
     requireText(databaseId, "databaseId");

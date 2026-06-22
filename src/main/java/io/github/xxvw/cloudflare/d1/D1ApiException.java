@@ -6,6 +6,16 @@ import java.util.List;
  * D1 API error response.
  */
 public class D1ApiException extends D1Exception {
+  /**
+   * Creates a D1 API exception.
+   *
+   * @param message exception message
+   * @param operation operation being performed
+   * @param statusCode HTTP status code
+   * @param rawBody raw HTTP response body
+   * @param errors API errors
+   * @param messages API messages
+   */
   public D1ApiException(
       String message,
       D1Operation operation,
