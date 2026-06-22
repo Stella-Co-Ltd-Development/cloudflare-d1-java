@@ -9,8 +9,48 @@ permissions:
   contents: read
 
 jobs:
+  verify:
+    name: Verify on Java ${{ matrix.java }}
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - java: "8"
+            distribution: temurin
+          - java: "11"
+            distribution: temurin
+          - java: "15"
+            distribution: zulu
+          - java: "17"
+            distribution: temurin
+          - java: "21"
+            distribution: temurin
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: ${{ matrix.distribution }}
+          java-version: ${{ matrix.java }}
+          cache: maven
+
+      - name: Verify
+        run: mvn -B clean verify
+
+      - name: Upload Java ${{ matrix.java }} artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cloudflare-d1-java-${{ github.ref_name }}-java-${{ matrix.java }}
+          path: target/cloudflare-d1-java-*.jar
+
   publish:
     name: Publish to Maven Central
+    needs: verify
     runs-on: ubuntu-latest
 
     steps:

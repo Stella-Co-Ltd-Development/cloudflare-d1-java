@@ -8,7 +8,9 @@ import io.github.xxvw.cloudflare.d1.internal.D1JsonMapper;
 import io.github.xxvw.cloudflare.d1.internal.D1ResponseParser;
 import io.github.xxvw.cloudflare.d1.internal.D1RetryExecutor;
 import io.github.xxvw.cloudflare.d1.internal.dto.D1ApiResponseDto;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -20,8 +22,7 @@ import java.util.function.Function;
  * Synchronous client for the Cloudflare D1 REST API.
  *
  * <p>Create instances with {@link #builder()} or {@link #fromEnv()}. Instances are closeable to
- * prevent accidental reuse after application shutdown, but closing does not close a user-provided
- * {@link java.net.http.HttpClient}.
+ * prevent accidental reuse after application shutdown.
  */
 public final class D1Client implements AutoCloseable {
   private static final String ENV_ACCOUNT_ID = "CLOUDFLARE_ACCOUNT_ID";
@@ -349,7 +350,7 @@ public final class D1Client implements AutoCloseable {
    * @param params positional parameter values
    * @return future completed with the parsed D1 result
    */
-  @Deprecated(since = "0.1.0", forRemoval = false)
+  @Deprecated
   public CompletableFuture<D1Result> queryAsync(String sql, Object... params) {
     return CompletableFuture.supplyAsync(() -> query(sql, params));
   }
@@ -361,7 +362,7 @@ public final class D1Client implements AutoCloseable {
    * @param params positional parameter values
    * @return future completed with the parsed D1 result
    */
-  @Deprecated(since = "0.1.0", forRemoval = false)
+  @Deprecated
   public CompletableFuture<D1Result> executeAsync(String sql, Object... params) {
     return CompletableFuture.supplyAsync(() -> execute(sql, params));
   }
@@ -372,7 +373,7 @@ public final class D1Client implements AutoCloseable {
    * @param queries non-empty query list
    * @return future completed with immutable result items
    */
-  @Deprecated(since = "0.1.0", forRemoval = false)
+  @Deprecated
   public CompletableFuture<List<D1Result>> batchAsync(List<D1Query> queries) {
     return CompletableFuture.supplyAsync(() -> batch(queries));
   }
@@ -412,8 +413,8 @@ public final class D1Client implements AutoCloseable {
           null,
           response.statusCode(),
           response.body(),
-          List.of(),
-          List.of());
+          Collections.<D1ResponseInfo>emptyList(),
+          Collections.<D1ResponseInfo>emptyList());
     }
   }
 
@@ -437,12 +438,12 @@ public final class D1Client implements AutoCloseable {
     for (D1Query query : queries) {
       Objects.requireNonNull(query, "batch query must not be null");
     }
-    return List.copyOf(queries);
+    return Collections.unmodifiableList(new ArrayList<>(queries));
   }
 
   private static String requireEnv(Function<String, String> env, String name) {
     String value = env.apply(name);
-    if (value == null || value.isBlank()) {
+    if (value == null || value.trim().isEmpty()) {
       throw new IllegalStateException(name + " environment variable must be set");
     }
     return value;

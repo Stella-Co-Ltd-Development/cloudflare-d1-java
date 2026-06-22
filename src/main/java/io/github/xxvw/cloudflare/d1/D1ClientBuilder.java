@@ -6,8 +6,8 @@ import io.github.xxvw.cloudflare.d1.internal.D1HttpClient;
 import io.github.xxvw.cloudflare.d1.internal.D1JsonMapper;
 import io.github.xxvw.cloudflare.d1.internal.D1RetryExecutor;
 import io.github.xxvw.cloudflare.d1.internal.D1Version;
+import io.github.xxvw.cloudflare.d1.internal.HttpURLConnectionD1Transport;
 import java.net.URI;
-import java.net.http.HttpClient;
 import java.time.Duration;
 import java.util.Objects;
 
@@ -15,7 +15,7 @@ import java.util.Objects;
  * Builder for {@link D1Client}.
  *
  * <p>Account ID, database ID, and API token are required. Optional settings provide custom
- * endpoint, timeout, retry, HTTP client, and typed row mapping behavior.
+ * endpoint, timeout, retry, HTTP transport, and typed row mapping behavior.
  */
 public final class D1ClientBuilder {
   private static final URI DEFAULT_BASE_URL = URI.create("https://api.cloudflare.com/client/v4");
@@ -30,7 +30,7 @@ public final class D1ClientBuilder {
   private Duration connectTimeout = DEFAULT_CONNECT_TIMEOUT;
   private Duration requestTimeout = DEFAULT_REQUEST_TIMEOUT;
   private D1RetryPolicy retryPolicy = D1RetryPolicy.defaultPolicy();
-  private HttpClient httpClient;
+  private D1Transport transport;
   private ObjectMapper objectMapper;
 
   D1ClientBuilder() {}
@@ -136,13 +136,13 @@ public final class D1ClientBuilder {
   }
 
   /**
-   * Sets a custom Java HTTP client.
+   * Sets a custom HTTP transport.
    *
-   * @param httpClient HTTP client
+   * @param transport HTTP transport
    * @return this builder
    */
-  public D1ClientBuilder httpClient(HttpClient httpClient) {
-    this.httpClient = Objects.requireNonNull(httpClient, "httpClient must not be null");
+  public D1ClientBuilder transport(D1Transport transport) {
+    this.transport = Objects.requireNonNull(transport, "transport must not be null");
     return this;
   }
 
@@ -167,12 +167,12 @@ public final class D1ClientBuilder {
     requireText(databaseId, "databaseId");
     requireText(apiToken, "apiToken");
     D1JsonMapper jsonMapper = new D1JsonMapper(objectMapper);
-    HttpClient client = httpClient == null
-        ? HttpClient.newBuilder().connectTimeout(connectTimeout).build()
-        : httpClient;
+    D1Transport selectedTransport = transport == null
+        ? new HttpURLConnectionD1Transport(connectTimeout)
+        : transport;
     D1Endpoint endpoint = new D1Endpoint(baseUrl, accountId, databaseId);
     D1HttpClient d1HttpClient =
-        new D1HttpClient(client, endpoint, apiToken, userAgent, requestTimeout, jsonMapper);
+        new D1HttpClient(selectedTransport, endpoint, apiToken, userAgent, requestTimeout, jsonMapper);
     return new D1Client(
         d1HttpClient,
         jsonMapper,
@@ -181,7 +181,7 @@ public final class D1ClientBuilder {
   }
 
   private static String requireText(String value, String name) {
-    if (value == null || value.isBlank()) {
+    if (value == null || value.trim().isEmpty()) {
       throw new IllegalArgumentException(name + " must not be null or blank");
     }
     return value;

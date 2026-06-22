@@ -4,7 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.Duration;
+import java.util.Collections;
 import java.util.Set;
+import java.util.LinkedHashSet;
 import org.junit.jupiter.api.Test;
 
 class D1RetryPolicyTest {
@@ -62,19 +64,25 @@ class D1RetryPolicyTest {
         .build()).isInstanceOf(IllegalArgumentException.class);
     assertThatThrownBy(() -> D1RetryPolicy.builder().retryStatusCodes(null).build())
         .isInstanceOf(NullPointerException.class);
-    assertThatThrownBy(() -> D1RetryPolicy.builder().retryStatusCodes(Set.of()).build())
+    assertThatThrownBy(() -> D1RetryPolicy.builder().retryStatusCodes(Collections.emptySet()).build())
         .isInstanceOf(IllegalArgumentException.class);
-    assertThatThrownBy(() -> D1RetryPolicy.builder().retryStatusCodes(Set.of(99)).build())
+    assertThatThrownBy(() -> D1RetryPolicy.builder().retryStatusCodes(setOf(99)).build())
         .isInstanceOf(IllegalArgumentException.class);
-    assertThatThrownBy(() -> D1RetryPolicy.builder().retryStatusCodes(Set.of(600)).build())
+    assertThatThrownBy(() -> D1RetryPolicy.builder().retryStatusCodes(setOf(600)).build())
         .isInstanceOf(IllegalArgumentException.class);
   }
 
   @Test
   void retryStatusCodesAreImmutable() {
-    D1RetryPolicy policy = D1RetryPolicy.builder().retryStatusCodes(Set.of(503)).build();
+    D1RetryPolicy policy = D1RetryPolicy.builder().retryStatusCodes(setOf(503)).build();
 
     assertThatThrownBy(() -> policy.retryStatusCodes().add(500))
         .isInstanceOf(UnsupportedOperationException.class);
+  }
+
+  private static Set<Integer> setOf(Integer value) {
+    Set<Integer> set = new LinkedHashSet<>();
+    set.add(value);
+    return set;
   }
 }

@@ -35,7 +35,7 @@ public final class D1ResponseInfo {
     this.documentationUrl = documentationUrl;
     this.source = source;
     this.additionalProperties = additionalProperties == null
-        ? Map.of()
+        ? Collections.<String, Object>emptyMap()
         : Collections.unmodifiableMap(new LinkedHashMap<>(additionalProperties));
   }
 

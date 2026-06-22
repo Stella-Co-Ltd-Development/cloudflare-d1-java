@@ -17,9 +17,17 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        java:
-          - "17"
-          - "21"
+        include:
+          - java: "8"
+            distribution: temurin
+          - java: "11"
+            distribution: temurin
+          - java: "15"
+            distribution: zulu
+          - java: "17"
+            distribution: temurin
+          - java: "21"
+            distribution: temurin
 
     steps:
       - name: Checkout
@@ -28,7 +36,7 @@ jobs:
       - name: Set up Java
         uses: actions/setup-java@v5
         with:
-          distribution: temurin
+          distribution: ${{ matrix.distribution }}
           java-version: ${{ matrix.java }}
           cache: maven
 

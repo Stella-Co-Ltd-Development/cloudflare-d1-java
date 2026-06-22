@@ -1,5 +1,7 @@
 package io.github.xxvw.cloudflare.d1;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -30,7 +32,9 @@ public final class D1BatchException extends D1ApiException {
       List<D1Result> partialResults) {
     super("D1 batch failed", D1Operation.BATCH, statusCode, rawBody, errors, messages);
     this.failedIndex = failedIndex;
-    this.partialResults = partialResults == null ? List.of() : List.copyOf(partialResults);
+    this.partialResults = partialResults == null
+        ? Collections.<D1Result>emptyList()
+        : Collections.unmodifiableList(new ArrayList<>(partialResults));
   }
 
   /**

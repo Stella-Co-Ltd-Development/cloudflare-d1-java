@@ -26,7 +26,7 @@ public final class D1Endpoint {
 
   public URI queryUri() {
     String path = baseUrl.getRawPath();
-    if (path == null || path.isBlank()) {
+    if (path == null || path.trim().isEmpty()) {
       path = "";
     }
     String fullPath = path
@@ -86,7 +86,7 @@ public final class D1Endpoint {
   }
 
   private static void requireText(String value, String name) {
-    if (value == null || value.isBlank()) {
+    if (value == null || value.trim().isEmpty()) {
       throw new IllegalArgumentException(name + " must not be null or blank");
     }
   }

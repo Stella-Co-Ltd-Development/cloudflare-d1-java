@@ -20,7 +20,7 @@ public final class D1Timings {
   public D1Timings(double sqlDurationMs, Map<String, Object> additionalProperties) {
     this.sqlDurationMs = sqlDurationMs;
     this.additionalProperties = additionalProperties == null
-        ? Map.of()
+        ? Collections.<String, Object>emptyMap()
         : Collections.unmodifiableMap(new LinkedHashMap<>(additionalProperties));
   }
 

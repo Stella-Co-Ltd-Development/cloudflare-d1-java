@@ -11,7 +11,7 @@ import java.util.OptionalLong;
  */
 public final class D1Meta {
   private static final D1Meta EMPTY = new D1Meta(
-      false, 0, null, 0, 0, 0.0, null, null, null, null, null, Map.of());
+      false, 0, null, 0, 0, 0.0, null, null, null, null, null, Collections.<String, Object>emptyMap());
 
   private final boolean changedDb;
   private final long changes;
@@ -67,7 +67,7 @@ public final class D1Meta {
     this.servedByPrimary = servedByPrimary;
     this.timings = timings;
     this.additionalProperties = additionalProperties == null
-        ? Map.of()
+        ? Collections.<String, Object>emptyMap()
         : Collections.unmodifiableMap(new LinkedHashMap<>(additionalProperties));
   }
 

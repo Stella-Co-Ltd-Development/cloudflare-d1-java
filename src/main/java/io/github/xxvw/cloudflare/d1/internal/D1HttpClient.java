@@ -3,17 +3,20 @@ package io.github.xxvw.cloudflare.d1.internal;
 import io.github.xxvw.cloudflare.d1.D1Operation;
 import io.github.xxvw.cloudflare.d1.D1Query;
 import io.github.xxvw.cloudflare.d1.D1TimeoutException;
+import io.github.xxvw.cloudflare.d1.D1Transport;
 import io.github.xxvw.cloudflare.d1.D1TransportException;
+import io.github.xxvw.cloudflare.d1.D1TransportRequest;
+import io.github.xxvw.cloudflare.d1.D1TransportResponse;
 import java.io.IOException;
 import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
+import java.net.SocketTimeoutException;
 import java.time.Duration;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 public final class D1HttpClient {
-  private final HttpClient httpClient;
+  private final D1Transport transport;
   private final URI endpoint;
   private final String apiToken;
   private final String userAgent;
@@ -21,13 +24,13 @@ public final class D1HttpClient {
   private final D1JsonMapper jsonMapper;
 
   public D1HttpClient(
-      HttpClient httpClient,
+      D1Transport transport,
       D1Endpoint endpoint,
       String apiToken,
       String userAgent,
       Duration requestTimeout,
       D1JsonMapper jsonMapper) {
-    this.httpClient = httpClient;
+    this.transport = transport;
     this.endpoint = endpoint.queryUri();
     this.apiToken = apiToken;
     this.userAgent = userAgent;
@@ -44,24 +47,19 @@ public final class D1HttpClient {
   }
 
   private D1HttpResponse send(String body, D1Operation operation) {
-    HttpRequest request = HttpRequest.newBuilder(endpoint)
-        .timeout(requestTimeout)
-        .header("Authorization", "Bearer " + apiToken)
-        .header("Content-Type", "application/json")
-        .header("Accept", "application/json")
-        .header("User-Agent", userAgent)
-        .POST(HttpRequest.BodyPublishers.ofString(body))
-        .build();
+    Map<String, String> headers = new LinkedHashMap<>();
+    headers.put("Authorization", "Bearer " + apiToken);
+    headers.put("Content-Type", "application/json");
+    headers.put("Accept", "application/json");
+    headers.put("User-Agent", userAgent);
+    D1TransportRequest request = new D1TransportRequest(endpoint, "POST", headers, body, requestTimeout);
     try {
-      HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+      D1TransportResponse response = transport.send(request);
       return new D1HttpResponse(response.statusCode(), response.headers(), response.body());
     } catch (IOException e) {
-      if (e instanceof java.net.http.HttpTimeoutException) {
+      if (e instanceof SocketTimeoutException) {
         throw new D1TimeoutException(operation, e);
       }
-      throw new D1TransportException(operation, e);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
       throw new D1TransportException(operation, e);
     }
   }

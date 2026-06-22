@@ -12,6 +12,7 @@ import io.github.xxvw.cloudflare.d1.internal.dto.D1ResponseInfoDto;
 import io.github.xxvw.cloudflare.d1.internal.dto.D1ResponseSourceDto;
 import io.github.xxvw.cloudflare.d1.internal.dto.D1TimingsDto;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -36,12 +37,12 @@ public final class D1ResponseParser {
     List<D1ResponseInfo> topMessages = infoList(apiResponse.messages);
     List<D1ResponseInfo> topErrors = infoList(apiResponse.errors);
     if (apiResponse.result == null) {
-      return List.of();
+      return Collections.emptyList();
     }
     for (D1QueryResultDto result : apiResponse.result) {
       results.add(toResult(result, rawBody, topMessages, topErrors));
     }
-    return List.copyOf(results);
+    return Collections.unmodifiableList(results);
   }
 
   public List<D1ResponseInfo> topErrors(D1ApiResponseDto apiResponse) {
@@ -65,7 +66,7 @@ public final class D1ResponseParser {
       List<D1ResponseInfo> topMessages,
       List<D1ResponseInfo> topErrors) {
     if (result == null) {
-      return new D1Result(true, List.of(), D1Meta.empty(), topMessages, topErrors, rawBody);
+      return new D1Result(true, Collections.<Map<String, Object>>emptyList(), D1Meta.empty(), topMessages, topErrors, rawBody);
     }
     List<D1ResponseInfo> messages = new ArrayList<>(topMessages);
     messages.addAll(infoList(result.messages));
@@ -73,7 +74,7 @@ public final class D1ResponseParser {
     errors.addAll(infoList(result.errors));
     return new D1Result(
         result.success == null || result.success,
-        result.results == null ? List.of() : result.results,
+        result.results == null ? Collections.<Map<String, Object>>emptyList() : result.results,
         meta(result.meta),
         messages,
         errors,
@@ -108,18 +109,18 @@ public final class D1ResponseParser {
 
   static List<D1ResponseInfo> infoList(List<D1ResponseInfoDto> dtos) {
     if (dtos == null || dtos.isEmpty()) {
-      return List.of();
+      return Collections.emptyList();
     }
     List<D1ResponseInfo> infos = new ArrayList<>(dtos.size());
     for (D1ResponseInfoDto dto : dtos) {
       infos.add(info(dto));
     }
-    return List.copyOf(infos);
+    return Collections.unmodifiableList(infos);
   }
 
   private static D1ResponseInfo info(D1ResponseInfoDto dto) {
     if (dto == null) {
-      return new D1ResponseInfo(0, null, null, null, Map.of());
+      return new D1ResponseInfo(0, null, null, null, Collections.<String, Object>emptyMap());
     }
     return new D1ResponseInfo(
         dto.code == null ? 0 : dto.code,
