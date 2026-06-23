@@ -127,7 +127,7 @@
           <version>${central-publishing-maven-plugin.version}</version>
           <configuration>
             <publishingServerId>central</publishingServerId>
-            <autoPublish>false</autoPublish>
+            <autoPublish>true</autoPublish>
             <waitUntil>published</waitUntil>
           </configuration>
         </plugin>
@@ -204,7 +204,7 @@
             <extensions>true</extensions>
             <configuration>
               <publishingServerId>central</publishingServerId>
-              <autoPublish>false</autoPublish>
+              <autoPublish>true</autoPublish>
               <waitUntil>published</waitUntil>
             </configuration>
           </plugin>

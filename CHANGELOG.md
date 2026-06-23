@@ -6,6 +6,11 @@ This project follows Semantic Versioning.
 
 ## [Unreleased]
 
+### Changed
+
+- Enabled automatic Maven Central publishing after release validation.
+- Added a manual workflow for publishing validated Maven Central deployments.
+
 ## [0.1.2] - 2026-06-23
 
 ### Changed
