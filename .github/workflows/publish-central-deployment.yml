@@ -1,0 +1,65 @@
+name: Publish Central Deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      deployment_id:
+        description: Central Portal deployment ID to publish
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: Publish deployment
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+
+    steps:
+      - name: Publish Central deployment
+        env:
+          CENTRAL_USERNAME: ${{ secrets.CENTRAL_USERNAME }}
+          CENTRAL_PASSWORD: ${{ secrets.CENTRAL_PASSWORD }}
+          DEPLOYMENT_ID: ${{ inputs.deployment_id }}
+        run: |
+          set -euo pipefail
+          token="$(printf '%s:%s' "$CENTRAL_USERNAME" "$CENTRAL_PASSWORD" | base64 | tr -d '\n')"
+          curl --fail-with-body \
+            --request POST \
+            --header "Authorization: Bearer ${token}" \
+            "https://central.sonatype.com/api/v1/publisher/deployment/${DEPLOYMENT_ID}"
+
+      - name: Wait for published state
+        env:
+          CENTRAL_USERNAME: ${{ secrets.CENTRAL_USERNAME }}
+          CENTRAL_PASSWORD: ${{ secrets.CENTRAL_PASSWORD }}
+          DEPLOYMENT_ID: ${{ inputs.deployment_id }}
+        run: |
+          set -euo pipefail
+          token="$(printf '%s:%s' "$CENTRAL_USERNAME" "$CENTRAL_PASSWORD" | base64 | tr -d '\n')"
+
+          for attempt in $(seq 1 60); do
+            response="$(curl --fail-with-body \
+              --request POST \
+              --header "Authorization: Bearer ${token}" \
+              "https://central.sonatype.com/api/v1/publisher/status?id=${DEPLOYMENT_ID}")"
+            state="$(printf '%s' "$response" | jq -r '.deploymentState')"
+            echo "Deployment state: ${state}"
+
+            if [ "$state" = "PUBLISHED" ]; then
+              exit 0
+            fi
+            if [ "$state" = "FAILED" ]; then
+              printf '%s\n' "$response"
+              exit 1
+            fi
+
+            sleep 10
+          done
+
+          echo "Deployment did not reach PUBLISHED within the timeout."
+          exit 1
