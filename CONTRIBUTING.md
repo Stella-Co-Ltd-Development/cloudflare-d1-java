@@ -91,19 +91,42 @@ Do not include AI tool names, assistant names, or generation metadata in commit 
 - Java 8 or later
 - Maven 3.9 or later
 
-## Build
+## Local Development
+
+Create a branch before editing files:
+
+```bash
+git switch -c docs/readme-quick-start
+```
+
+Build and test:
 
 ```bash
 mvn clean verify
 ```
 
-## Tests
+Run only tests during iteration:
 
 ```bash
 mvn test
 ```
 
 Test names, comments, and documentation should be written in English.
+
+## Issue Labels
+
+The repository uses labels to keep contribution work easy to find:
+
+- `bug`: incorrect behavior or regression
+- `enhancement`: new public behavior or API improvement
+- `documentation`: README, guides, Javadocs, or examples
+- `good first issue`: small scoped work suitable for new contributors
+- `help wanted`: work where maintainer input is available but contributor help is welcome
+- `security`: security-sensitive maintenance work
+- `release`: release preparation and publishing work
+- `api`: public API design or compatibility work
+
+Good first contributions include README clarifications, additional MockWebServer tests for edge cases, Javadoc improvements, and small examples that do not add runtime dependencies.
 
 ## Public API Rules
 

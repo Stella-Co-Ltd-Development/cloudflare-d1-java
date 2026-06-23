@@ -1,8 +1,13 @@
 # cloudflare-d1-java
 
+[![CI](https://github.com/Stella-Co-Ltd-Development/cloudflare-d1-java/actions/workflows/ci.yml/badge.svg)](https://github.com/Stella-Co-Ltd-Development/cloudflare-d1-java/actions/workflows/ci.yml)
+[![Maven Central](https://img.shields.io/maven-central/v/io.github.xxvw/cloudflare-d1-java.svg)](https://central.sonatype.com/artifact/io.github.xxvw/cloudflare-d1-java)
+[![Javadocs](https://javadoc.io/badge2/io.github.xxvw/cloudflare-d1-java/javadoc.svg)](https://javadoc.io/doc/io.github.xxvw/cloudflare-d1-java)
+[![License](https://img.shields.io/github/license/Stella-Co-Ltd-Development/cloudflare-d1-java.svg)](LICENSE)
+
 `cloudflare-d1-java` is an unofficial Java client for the Cloudflare D1 REST API.
 
-It is a lightweight SDK for applications that need direct REST API access to D1. It is not a JDBC driver, ORM, SQL builder, migration tool, or Cloudflare Workers binding client.
+It is a lightweight SDK for Java applications that need direct REST API access to D1. It is not a JDBC driver, ORM, SQL builder, migration tool, Spring Boot starter, or Cloudflare Workers binding client.
 
 ## Installation
 
@@ -10,42 +15,66 @@ It is a lightweight SDK for applications that need direct REST API access to D1.
 <dependency>
   <groupId>io.github.xxvw</groupId>
   <artifactId>cloudflare-d1-java</artifactId>
-  <version>0.1.1</version>
+  <version>0.1.2</version>
 </dependency>
 ```
 
-Java 8 or newer is required.
+Requirements:
+
+- Java 8 or newer.
+- Maven, Gradle, or another build tool that can consume Maven Central artifacts.
+- A Cloudflare account with a D1 database.
+- A Cloudflare API token with Account, D1, Edit permission for write operations. Use the minimum permission that fits your application.
+
+Runtime dependency:
+
+- `jackson-databind`
 
 ## Quick Start
+
+Set credentials with environment variables:
+
+```bash
+export CLOUDFLARE_ACCOUNT_ID="your-account-id"
+export D1_DATABASE_ID="your-d1-database-id"
+export CLOUDFLARE_API_TOKEN="your-api-token"
+```
+
+Use the client:
 
 ```java
 import io.github.xxvw.cloudflare.d1.D1Client;
 import io.github.xxvw.cloudflare.d1.D1Result;
 
-try (D1Client d1 = D1Client.builder()
-    .accountId(System.getenv("CLOUDFLARE_ACCOUNT_ID"))
-    .databaseId(System.getenv("D1_DATABASE_ID"))
-    .apiToken(System.getenv("CLOUDFLARE_API_TOKEN"))
-    .build()) {
-
+try (D1Client d1 = D1Client.fromEnv()) {
   D1Result result = d1.query("SELECT id, name FROM users WHERE id = ?", 1);
   result.rows().forEach(System.out::println);
 }
 ```
 
-You can also create a client directly from environment variables:
+You can also configure values explicitly:
 
 ```java
-D1Client d1 = D1Client.fromEnv();
+D1Client d1 = D1Client.builder()
+    .accountId(System.getenv("CLOUDFLARE_ACCOUNT_ID"))
+    .databaseId(System.getenv("D1_DATABASE_ID"))
+    .apiToken(System.getenv("CLOUDFLARE_API_TOKEN"))
+    .build();
 ```
 
-Required environment variables:
+See [Quick Start](docs/guides/quick-start.md) for a complete copy-paste friendly example.
 
-```text
-CLOUDFLARE_ACCOUNT_ID
-D1_DATABASE_ID
-CLOUDFLARE_API_TOKEN
-```
+## Supported Operations
+
+| Operation | Method | Default retry behavior |
+|---|---|---|
+| Query rows | `query(...)` | Retries transient failures |
+| Query first row | `queryFirst(...)` | Retries transient failures |
+| Execute writes | `execute(...)` | Does not retry by default |
+| Batch statements | `batch(...)` | Does not retry by default |
+| Typed row mapping | `query(..., User.class)` | Same as query |
+
+Parameters may be `String`, `Number`, `Boolean`, or `null`. Convert dates, JSON values, and custom objects to strings before passing them as SQL parameters.
 
 ## Query
 
@@ -58,8 +87,6 @@ D1Result result = d1.query(
 List<Map<String, Object>> rows = result.rows();
 Optional<Map<String, Object>> first = result.firstRow();
 ```
-
-Parameters may be `String`, `Number`, `Boolean`, or `null`. Convert dates and JSON values to strings before passing them as SQL parameters.
 
 ## Typed Query
 
@@ -79,36 +106,7 @@ List<User> users = d1.query(
 
 Typed mapping uses Jackson. Unknown row properties are ignored by the default mapping `ObjectMapper`. A mapping failure in any row throws `D1MappingException`.
 
-You may provide a custom mapper for typed row mapping:
-
-```java
-D1Client client = D1Client.builder()
-    .accountId(System.getenv("CLOUDFLARE_ACCOUNT_ID"))
-    .databaseId(System.getenv("D1_DATABASE_ID"))
-    .apiToken(System.getenv("CLOUDFLARE_API_TOKEN"))
-    .objectMapper(customMapper)
-    .build();
-```
-
-The custom mapper is used only for row-to-type mapping, not for internal D1 request or response parsing.
-
-## Custom Transport
-
-The default transport uses the Java standard library and does not add runtime dependencies. You may provide a custom transport:
-
-```java
-import java.util.Collections;
-
-D1Client client = D1Client.builder()
-    .accountId(System.getenv("CLOUDFLARE_ACCOUNT_ID"))
-    .databaseId(System.getenv("D1_DATABASE_ID"))
-    .apiToken(System.getenv("CLOUDFLARE_API_TOKEN"))
-    .transport(request -> {
-      // Execute request.uri(), request.method(), request.headers(), and request.body().
-      return new D1TransportResponse(200, Collections.emptyMap(), "{\"success\":true,\"result\":[]}");
-    })
-    .build();
-```
+See [Typed Mapping](docs/guides/typed-mapping.md) for custom mapper guidance.
 
 ## queryFirst
 
@@ -191,15 +189,7 @@ Disable retries:
 D1RetryPolicy retryPolicy = D1RetryPolicy.none();
 ```
 
-## Async Preview
-
-The async methods are preview APIs and are marked deprecated to avoid treating their signatures as stable:
-
-```java
-CompletableFuture<D1Result> future = d1.queryAsync("SELECT 1");
-```
-
-Failures complete the future exceptionally.
+See [Retry Policy](docs/guides/retry-policy.md) for retry tradeoffs.
 
 ## Error Handling
 
@@ -221,6 +211,69 @@ try {
 
 Exception messages do not include API tokens or SQL parameter values. `D1QueryException.sql()` may expose SQL text for diagnostics.
 
+See [Error Handling](docs/guides/error-handling.md) for the exception hierarchy.
+
+## Custom Transport
+
+The default transport uses the Java standard library and does not add runtime dependencies. You may provide a custom transport:
+
+```java
+import java.util.Collections;
+
+D1Client client = D1Client.builder()
+    .accountId(System.getenv("CLOUDFLARE_ACCOUNT_ID"))
+    .databaseId(System.getenv("D1_DATABASE_ID"))
+    .apiToken(System.getenv("CLOUDFLARE_API_TOKEN"))
+    .transport(request -> {
+      return new D1TransportResponse(200, Collections.emptyMap(), "{\"success\":true,\"result\":[]}");
+    })
+    .build();
+```
+
+See [Custom Transport](docs/guides/custom-transport.md) for implementation notes.
+
+## Async Preview
+
+The async methods are preview APIs and are marked deprecated to avoid treating their signatures as stable:
+
+```java
+CompletableFuture<D1Result> future = d1.queryAsync("SELECT 1");
+```
+
+Failures complete the future exceptionally.
+
+## Finding Cloudflare IDs
+
+- Account ID: Cloudflare dashboard account details, or Wrangler output.
+- Database ID: D1 database details in the Cloudflare dashboard, or `wrangler d1 list`.
+- API token: Cloudflare dashboard API Tokens page. Store it outside source control.
+
+The default REST API base URL is:
+
+```text
+https://api.cloudflare.com/client/v4
+```
+
+## Troubleshooting
+
+| Symptom | Check |
+|---|---|
+| `D1AuthenticationException` | The API token is missing, expired, malformed, or not being passed to the client. |
+| `D1AuthorizationException` | The token does not have permission for the account or database. |
+| `D1QueryException` | SQL failed at D1. Inspect `errors()` and, when appropriate, `sql()`. |
+| `D1RateLimitException` | Respect `retryAfter()` and reduce request rate. |
+| Empty result rows | Confirm the SQL query, target database ID, and whether the statement returns rows. |
+
+## Documentation
+
+- [Quick Start](docs/guides/quick-start.md)
+- [Typed Mapping](docs/guides/typed-mapping.md)
+- [Retry Policy](docs/guides/retry-policy.md)
+- [Error Handling](docs/guides/error-handling.md)
+- [Custom Transport](docs/guides/custom-transport.md)
+- [Release Readiness](docs/release/release-readiness.md)
+- [Implementation Requirements](docs/implementation-requirements/README.md)
+
 ## Security Notes
 
 - Do not hard-code API tokens.
@@ -238,4 +291,7 @@ Exception messages do not include API tokens or SQL parameter values. `D1QueryEx
 - No Spring Boot starter.
 - No Cloudflare Workers Binding API support.
 - No logging framework integration.
-- Runtime dependencies are intentionally limited to Jackson Databind.
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md). Good first contributions include documentation improvements, additional tests around edge cases, and small examples that do not add runtime dependencies.

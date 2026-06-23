@@ -6,6 +6,14 @@ This project follows Semantic Versioning.
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-06-23
+
+### Changed
+
+- Improved README onboarding, badges, setup guidance, and troubleshooting.
+- Added focused usage guides for quick start, typed mapping, retry policy, error handling, and custom transport.
+- Clarified contributor workflow, issue labels, issue templates, and beginner-friendly contribution examples.
+
 ## [0.1.1] - 2026-06-22
 
 ### Changed

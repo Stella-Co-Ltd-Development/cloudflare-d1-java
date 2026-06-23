@@ -2,7 +2,7 @@ name: Task
 description: Track implementation, test, documentation, or release work
 title: "[Task]: "
 labels:
-  - type: task
+  - task
 body:
   - type: textarea
     id: summary
