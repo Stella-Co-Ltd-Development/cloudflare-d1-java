@@ -2,7 +2,8 @@ name: Feature request
 description: Propose a new feature or API change
 title: "[Feature]: "
 labels:
-  - type: feature
+  - enhancement
+  - api
 body:
   - type: markdown
     attributes:

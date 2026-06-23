@@ -1,0 +1,46 @@
+name: Documentation
+description: Suggest a README, guide, Javadoc, or example improvement
+title: "[Docs]: "
+labels:
+  - documentation
+  - good first issue
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve the documentation. Please keep examples free of real account IDs, database IDs, tokens, and production data.
+
+  - type: textarea
+    id: page
+    attributes:
+      label: Page or Section
+      description: Which page, guide, Javadoc, or example should change?
+      placeholder: README Quick Start, docs/guides/retry-policy.md, etc.
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What is confusing, missing, incorrect, or hard to follow?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Suggested Improvement
+      description: What should be added or changed?
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I checked existing issues before opening this one.
+          required: true
+        - label: This issue does not include secrets, API tokens, private keys, customer data, or sensitive data.
+          required: true
