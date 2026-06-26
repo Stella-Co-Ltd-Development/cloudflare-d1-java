@@ -14,6 +14,7 @@ This project follows Semantic Versioning.
 - Added public Javadoc examples for common client and retry-policy usage.
 - Added a runnable fake custom transport example.
 - Added focused non-JSON HTTP error tests for status exposure and sanitized exception messages.
+- Added the raw result model and internal raw response parsing foundation.
 
 ## [0.1.3] - 2026-06-26
 

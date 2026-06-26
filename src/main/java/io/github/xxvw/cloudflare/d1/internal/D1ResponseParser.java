@@ -1,6 +1,7 @@
 package io.github.xxvw.cloudflare.d1.internal;
 
 import io.github.xxvw.cloudflare.d1.D1Meta;
+import io.github.xxvw.cloudflare.d1.D1RawResult;
 import io.github.xxvw.cloudflare.d1.D1ResponseInfo;
 import io.github.xxvw.cloudflare.d1.D1ResponseSource;
 import io.github.xxvw.cloudflare.d1.D1Result;
@@ -8,6 +9,8 @@ import io.github.xxvw.cloudflare.d1.D1Timings;
 import io.github.xxvw.cloudflare.d1.internal.dto.D1ApiResponseDto;
 import io.github.xxvw.cloudflare.d1.internal.dto.D1MetaDto;
 import io.github.xxvw.cloudflare.d1.internal.dto.D1QueryResultDto;
+import io.github.xxvw.cloudflare.d1.internal.dto.D1RawApiResponseDto;
+import io.github.xxvw.cloudflare.d1.internal.dto.D1RawQueryResultDto;
 import io.github.xxvw.cloudflare.d1.internal.dto.D1ResponseInfoDto;
 import io.github.xxvw.cloudflare.d1.internal.dto.D1ResponseSourceDto;
 import io.github.xxvw.cloudflare.d1.internal.dto.D1TimingsDto;
@@ -25,6 +28,10 @@ public final class D1ResponseParser {
 
   public D1ApiResponseDto parseApiResponse(String rawBody) throws com.fasterxml.jackson.core.JsonProcessingException {
     return jsonMapper.readApiResponse(rawBody);
+  }
+
+  public D1RawApiResponseDto parseRawApiResponse(String rawBody) throws com.fasterxml.jackson.core.JsonProcessingException {
+    return jsonMapper.readRawApiResponse(rawBody);
   }
 
   public D1Result parseSingle(D1ApiResponseDto apiResponse, String rawBody) {
@@ -45,6 +52,24 @@ public final class D1ResponseParser {
     return Collections.unmodifiableList(results);
   }
 
+  public D1RawResult parseRawSingle(D1RawApiResponseDto apiResponse, String rawBody) {
+    D1RawQueryResultDto result = firstRawResult(apiResponse);
+    return toRawResult(result, rawBody, infoList(apiResponse.messages), infoList(apiResponse.errors));
+  }
+
+  public List<D1RawResult> parseRawBatch(D1RawApiResponseDto apiResponse, String rawBody) {
+    List<D1RawResult> results = new ArrayList<>();
+    List<D1ResponseInfo> topMessages = infoList(apiResponse.messages);
+    List<D1ResponseInfo> topErrors = infoList(apiResponse.errors);
+    if (apiResponse.result == null) {
+      return Collections.emptyList();
+    }
+    for (D1RawQueryResultDto result : apiResponse.result) {
+      results.add(toRawResult(result, rawBody, topMessages, topErrors));
+    }
+    return Collections.unmodifiableList(results);
+  }
+
   public List<D1ResponseInfo> topErrors(D1ApiResponseDto apiResponse) {
     return infoList(apiResponse == null ? null : apiResponse.errors);
   }
@@ -54,6 +79,13 @@ public final class D1ResponseParser {
   }
 
   private static D1QueryResultDto firstResult(D1ApiResponseDto apiResponse) {
+    if (apiResponse.result == null || apiResponse.result.isEmpty()) {
+      return null;
+    }
+    return apiResponse.result.get(0);
+  }
+
+  private static D1RawQueryResultDto firstRawResult(D1RawApiResponseDto apiResponse) {
     if (apiResponse.result == null || apiResponse.result.isEmpty()) {
       return null;
     }
@@ -75,6 +107,35 @@ public final class D1ResponseParser {
     return new D1Result(
         result.success == null || result.success,
         result.results == null ? Collections.<Map<String, Object>>emptyList() : result.results,
+        meta(result.meta),
+        messages,
+        errors,
+        rawBody);
+  }
+
+  private static D1RawResult toRawResult(
+      D1RawQueryResultDto result,
+      String rawBody,
+      List<D1ResponseInfo> topMessages,
+      List<D1ResponseInfo> topErrors) {
+    if (result == null) {
+      return new D1RawResult(
+          true,
+          Collections.<String>emptyList(),
+          Collections.<List<Object>>emptyList(),
+          D1Meta.empty(),
+          topMessages,
+          topErrors,
+          rawBody);
+    }
+    List<D1ResponseInfo> messages = new ArrayList<>(topMessages);
+    messages.addAll(infoList(result.messages));
+    List<D1ResponseInfo> errors = new ArrayList<>(topErrors);
+    errors.addAll(infoList(result.errors));
+    return new D1RawResult(
+        result.success == null || result.success,
+        result.results == null ? Collections.<String>emptyList() : result.results.columns,
+        result.results == null ? Collections.<List<Object>>emptyList() : result.results.rows,
         meta(result.meta),
         messages,
         errors,
