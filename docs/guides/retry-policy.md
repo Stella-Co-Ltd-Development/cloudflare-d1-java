@@ -1,6 +1,6 @@
 # Retry Policy
 
-`query(...)` retries transient HTTP failures by default. `execute(...)` and `batch(...)` do not retry by default because write operations may not be idempotent.
+`query(...)` and `raw(...)` retry transient HTTP failures by default. `execute(...)`, `batch(...)`, and `rawBatch(...)` do not retry by default because write operations and batches may not be idempotent.
 
 ## Defaults
 
@@ -8,6 +8,8 @@
 retryQuery = true
 retryExecute = false
 retryBatch = false
+retryRaw = true
+retryRawBatch = false
 maxRetries = 2
 baseDelay = 200ms
 maxDelay = 2s
@@ -34,6 +36,8 @@ D1RetryPolicy retryPolicy = D1RetryPolicy.builder()
     .retryQuery(true)
     .retryExecute(false)
     .retryBatch(false)
+    .retryRaw(true)
+    .retryRawBatch(false)
     .maxRetries(3)
     .baseDelay(Duration.ofMillis(300))
     .maxDelay(Duration.ofSeconds(5))

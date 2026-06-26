@@ -145,8 +145,10 @@ mvn -f examples/quickstart/pom.xml compile exec:java \
 |---|---|---|
 | Query rows | `query(...)` | Retries transient failures |
 | Query first row | `queryFirst(...)` | Retries transient failures |
+| Raw rows | `raw(...)` | Retries transient failures |
 | Execute writes | `execute(...)` | Does not retry by default |
 | Batch statements | `batch(...)` | Does not retry by default |
+| Raw batch statements | `rawBatch(...)` | Does not retry by default |
 | Typed row mapping | `query(..., User.class)` | Same as query |
 | Async operations | `D1AsyncClient` | Same as the underlying operation |
 
@@ -227,6 +229,22 @@ List<D1Result> results = d1.batch(
 
 Use `batch(...)` for multiple operations instead of relying on semicolon-separated SQL statements. Empty batches are rejected.
 
+## Raw Query
+
+Use `raw(...)` when you want rows returned as arrays with a separate column list:
+
+```java
+D1RawResult result = d1.raw(
+    "SELECT id, name FROM users WHERE active = ?",
+    true
+);
+
+List<String> columns = result.columns();
+List<List<Object>> rows = result.rows();
+```
+
+See [Raw Query API](docs/guides/raw.md) for raw batch and async examples.
+
 ## Retry Policy
 
 Queries retry by default on `429`, `500`, `502`, `503`, and `504`.
@@ -237,6 +255,8 @@ Default policy:
 retryQuery = true
 retryExecute = false
 retryBatch = false
+retryRaw = true
+retryRawBatch = false
 maxRetries = 2
 baseDelay = 200ms
 maxDelay = 2s
@@ -251,6 +271,8 @@ D1RetryPolicy retryPolicy = D1RetryPolicy.builder()
     .retryQuery(true)
     .retryExecute(false)
     .retryBatch(false)
+    .retryRaw(true)
+    .retryRawBatch(false)
     .maxRetries(3)
     .baseDelay(Duration.ofMillis(300))
     .maxDelay(Duration.ofSeconds(5))
@@ -369,6 +391,7 @@ See [Troubleshooting](docs/guides/troubleshooting.md) for common setup, API, and
 - [Quick Start](docs/guides/quick-start.md)
 - [Async API](docs/guides/async.md)
 - [Typed Mapping](docs/guides/typed-mapping.md)
+- [Raw Query API](docs/guides/raw.md)
 - [Retry Policy](docs/guides/retry-policy.md)
 - [Error Handling](docs/guides/error-handling.md)
 - [Custom Transport](docs/guides/custom-transport.md)

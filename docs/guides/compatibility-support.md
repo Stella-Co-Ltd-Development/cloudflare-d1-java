@@ -20,6 +20,7 @@ The library uses Java 8-compatible APIs. Newer Java versions can consume the sam
 |---|---|
 | Query rows | Supported |
 | Query first row | Supported |
+| Raw query rows | Supported |
 | Execute writes | Supported |
 | Batch statements | Supported |
 | Typed row mapping | Supported through Jackson |

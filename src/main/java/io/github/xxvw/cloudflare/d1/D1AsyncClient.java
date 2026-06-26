@@ -306,6 +306,68 @@ public final class D1AsyncClient implements AutoCloseable {
   }
 
   /**
+   * Runs a raw SQL query without positional parameters.
+   *
+   * @param sql SQL text to execute
+   * @return future completed with the parsed raw D1 result
+   */
+  public CompletableFuture<D1RawResult> rawAsync(String sql) {
+    return rawAsync(D1Query.of(sql));
+  }
+
+  /**
+   * Runs a raw SQL query with positional parameters.
+   *
+   * @param sql SQL text to execute
+   * @param params positional parameter values
+   * @return future completed with the parsed raw D1 result
+   */
+  public CompletableFuture<D1RawResult> rawAsync(String sql, Object... params) {
+    return rawAsync(D1Query.of(sql, params));
+  }
+
+  /**
+   * Runs a raw SQL query with positional parameters.
+   *
+   * @param sql SQL text to execute
+   * @param params positional parameter values
+   * @return future completed with the parsed raw D1 result
+   */
+  public CompletableFuture<D1RawResult> rawAsync(String sql, List<?> params) {
+    return rawAsync(D1Query.of(sql, params));
+  }
+
+  /**
+   * Runs a prepared raw D1 query.
+   *
+   * @param query query object
+   * @return future completed with the parsed raw D1 result
+   */
+  public CompletableFuture<D1RawResult> rawAsync(D1Query query) {
+    return supply(() -> delegate.raw(query));
+  }
+
+  /**
+   * Executes a raw batch of D1 queries.
+   *
+   * @param queries non-empty query list
+   * @return future completed with immutable raw result items
+   */
+  public CompletableFuture<List<D1RawResult>> rawBatchAsync(List<D1Query> queries) {
+    return supply(() -> delegate.rawBatch(queries));
+  }
+
+  /**
+   * Executes a raw batch of D1 queries.
+   *
+   * @param queries non-empty query array
+   * @return future completed with immutable raw result items
+   */
+  public CompletableFuture<List<D1RawResult>> rawBatchAsync(D1Query... queries) {
+    return supply(() -> delegate.rawBatch(queries));
+  }
+
+  /**
    * Marks this client as closed and prevents further requests.
    */
   @Override
