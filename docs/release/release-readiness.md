@@ -6,7 +6,7 @@ create a tag, or change the project version.
 ## Current Version
 
 ```text
-0.1.1
+0.1.3
 ```
 
 The next release version should be chosen by maintainers according to Semantic Versioning. Do not

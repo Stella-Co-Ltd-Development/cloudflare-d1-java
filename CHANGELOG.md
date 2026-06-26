@@ -6,6 +6,8 @@ This project follows Semantic Versioning.
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-06-26
+
 ### Changed
 
 - Enabled automatic Maven Central publishing after release validation.

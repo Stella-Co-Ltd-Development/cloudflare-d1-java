@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/Stella-Co-Ltd-Development/cloudflare-d1-java/actions/workflows/ci.yml/badge.svg)](https://github.com/Stella-Co-Ltd-Development/cloudflare-d1-java/actions/workflows/ci.yml)
 [![Maven Central](https://img.shields.io/maven-central/v/io.github.xxvw/cloudflare-d1-java.svg)](https://central.sonatype.com/artifact/io.github.xxvw/cloudflare-d1-java)
-[![Javadocs](https://javadoc.io/badge2/io.github.xxvw/cloudflare-d1-java/0.1.2/javadoc.svg)](https://javadoc.io/doc/io.github.xxvw/cloudflare-d1-java/0.1.2)
+[![Javadocs](https://javadoc.io/badge2/io.github.xxvw/cloudflare-d1-java/0.1.3/javadoc.svg)](https://javadoc.io/doc/io.github.xxvw/cloudflare-d1-java/0.1.3)
 [![License](https://img.shields.io/github/license/Stella-Co-Ltd-Development/cloudflare-d1-java.svg?cacheSeconds=3600)](LICENSE)
 
 `cloudflare-d1-java` is an unofficial Java client for the Cloudflare D1 REST API.
@@ -17,14 +17,14 @@ The D1 REST API is a good fit for server-side tools, administration, batch jobs,
 <dependency>
   <groupId>io.github.xxvw</groupId>
   <artifactId>cloudflare-d1-java</artifactId>
-  <version>0.1.2</version>
+  <version>0.1.3</version>
 </dependency>
 ```
 
 Gradle:
 
 ```groovy
-implementation "io.github.xxvw:cloudflare-d1-java:0.1.2"
+implementation "io.github.xxvw:cloudflare-d1-java:0.1.3"
 ```
 
 Requirements:
