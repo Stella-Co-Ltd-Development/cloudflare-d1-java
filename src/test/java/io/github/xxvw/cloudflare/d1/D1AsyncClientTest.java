@@ -124,6 +124,27 @@ class D1AsyncClientTest {
   }
 
   @Test
+  void rawAndRawBatchAsyncReturnResults() throws Exception {
+    server.enqueue(ok(rawBody("[\"value\"]", "[[1]]", metaBody())));
+    server.enqueue(ok("{\"success\":true,\"result\":["
+        + "{\"success\":true,\"results\":{\"columns\":[\"left\"],\"rows\":[[10]]},\"meta\":{}},"
+        + "{\"success\":true,\"results\":{\"columns\":[\"right\"],\"rows\":[[20]]},\"meta\":{}}"
+        + "],\"errors\":[],\"messages\":[]}"));
+    D1AsyncClient client = testClient();
+
+    D1RawResult raw = client.rawAsync("SELECT ? AS value", 1).get(1, TimeUnit.SECONDS);
+    List<D1RawResult> batch =
+        client.rawBatchAsync(D1Query.of("SELECT 10 AS left"), D1Query.of("SELECT 20 AS right"))
+            .get(1, TimeUnit.SECONDS);
+
+    assertThat(raw.columns()).containsExactly("value");
+    assertThat(raw.rows()).containsExactly(Collections.<Object>singletonList(1));
+    assertThat(batch).hasSize(2);
+    assertThat(batch.get(0).columns()).containsExactly("left");
+    assertThat(batch.get(1).rows()).containsExactly(Collections.<Object>singletonList(20));
+  }
+
+  @Test
   void asyncFailuresCompleteExceptionallyWithPublicExceptions() {
     server.enqueue(jsonError(401));
     server.enqueue(ok(selectBody("[{\"id\":\"not-a-number\",\"name\":\"Taro\"}]", metaBody())));
@@ -153,6 +174,18 @@ class D1AsyncClientTest {
     assertThatThrownBy(timeoutFailure::join)
         .isInstanceOf(CompletionException.class)
         .hasCauseInstanceOf(D1TimeoutException.class);
+  }
+
+  @Test
+  void rawAsyncFailuresCompleteExceptionallyWithPublicExceptions() {
+    server.enqueue(jsonError(401));
+    D1AsyncClient client = testClient();
+
+    CompletableFuture<D1RawResult> authenticationFailure = client.rawAsync("SELECT 1");
+
+    assertThatThrownBy(authenticationFailure::join)
+        .isInstanceOf(CompletionException.class)
+        .hasCauseInstanceOf(D1AuthenticationException.class);
   }
 
   @Test
@@ -194,6 +227,11 @@ class D1AsyncClientTest {
   private static String selectBody(String rows, String meta) {
     return "{\"success\":true,\"result\":[{\"success\":true,\"results\":" + rows + ",\"meta\":" + meta
         + "}],\"errors\":[],\"messages\":[]}";
+  }
+
+  private static String rawBody(String columns, String rows, String meta) {
+    return "{\"success\":true,\"result\":[{\"success\":true,\"results\":{\"columns\":" + columns
+        + ",\"rows\":" + rows + "},\"meta\":" + meta + "}],\"errors\":[],\"messages\":[]}";
   }
 
   private static String metaBody() {
