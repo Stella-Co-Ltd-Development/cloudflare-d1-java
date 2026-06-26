@@ -12,6 +12,7 @@ This project follows Semantic Versioning.
 - Added a manual workflow for publishing validated Maven Central deployments.
 - Replaced the shortened license file with Apache License 2.0 text for GitHub license detection.
 - Added first-run quickstart example documentation and expected output.
+- Added cross-agent development instruction entrypoints.
 
 ## [0.1.2] - 2026-06-23
 

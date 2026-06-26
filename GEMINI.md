@@ -1,6 +1,6 @@
 # Project Instructions
 
-@AGENTS.md
+@./AGENTS.md
 
 This file imports the authoritative repository instructions from [AGENTS.md](AGENTS.md). Follow that file before editing, testing, committing, or opening a pull request.
 
@@ -9,8 +9,6 @@ This file imports the authoritative repository instructions from [AGENTS.md](AGE
 - Create a new branch before editing files.
 - Do not commit directly to `main`.
 - Use Java 8-compatible APIs only.
-- Keep public API in `io.github.xxvw.cloudflare.d1`.
-- Keep internal implementation in `io.github.xxvw.cloudflare.d1.internal`.
 - Never commit API tokens, private keys, account IDs, database IDs, or secrets.
 - Add or update tests for behavior changes.
 - Run `mvn clean verify` before opening a pull request.
