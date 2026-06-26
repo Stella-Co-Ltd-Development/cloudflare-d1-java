@@ -6,7 +6,7 @@
 
   <groupId>io.github.xxvw</groupId>
   <artifactId>cloudflare-d1-java</artifactId>
-  <version>0.1.2</version>
+  <version>0.1.3</version>
   <packaging>jar</packaging>
 
   <name>cloudflare-d1-java</name>
