@@ -25,6 +25,9 @@ mvn -B -Prelease -Dgpg.skip=true verify
 The release profile command must build the main jar, sources jar, and javadoc jar. A real release run
 must not use `-Dgpg.skip=true`.
 
+The release workflow also creates an offline Javadocs zip, SHA-256 checksums, and GitHub Release
+assets for the version tag.
+
 ## Maven Central Prerequisites
 
 - Maven Central namespace is verified for `io.github.xxvw`.
@@ -61,7 +64,8 @@ mvn -B clean deploy -Prelease
 ```
 
 Review the current Maven Central publishing plugin settings before tagging so the intended publish
-safety model is clear.
+safety model is clear. The current policy is automatic publication after Central Portal validation
+when a `v*` tag is pushed.
 
 ## Tag Command For Later
 
@@ -86,7 +90,10 @@ Do not create a release tag during release-readiness review.
 - [ ] Confirm test fixtures use only fake token, account, and database values.
 - [ ] Confirm no secret values are present in documentation, tests, or workflow files.
 - [ ] Confirm Maven Central credentials and signing secrets are configured.
-- [ ] Confirm Maven Central publishing settings match the intended release safety model.
+- [ ] Confirm Maven Central publishing settings match automatic publication on release tags.
+- [ ] Confirm the release workflow validates and uploads GitHub Release assets.
 - [ ] Update version references only in the release pull request.
 - [ ] Move changelog entries from `Unreleased` to the selected release version only in the release pull request.
 - [ ] Create and push the release tag only after the release pull request is merged.
+- [ ] Confirm the GitHub Release includes main jar, sources jar, javadoc jar, offline Javadocs zip, signatures, and checksums.
+- [ ] Confirm the Maven Central artifact is available for the release version.

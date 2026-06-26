@@ -403,6 +403,15 @@ See [Troubleshooting](docs/guides/troubleshooting.md) for common setup, API, and
 - Cloudflare D1 REST API import tutorial: <https://developers.cloudflare.com/d1/tutorials/import-to-d1-with-rest-api/>
 - Cloudflare Worker proxy tutorial: <https://developers.cloudflare.com/d1/tutorials/build-an-api-to-access-d1/>
 
+## Release Artifacts
+
+Published versions are available from Maven Central. GitHub Releases also attach versioned jars,
+signatures, SHA-256 checksums, and an offline Javadocs zip for manual download:
+
+- Maven Central: <https://central.sonatype.com/artifact/io.github.xxvw/cloudflare-d1-java>
+- GitHub Releases: <https://github.com/Stella-Co-Ltd-Development/cloudflare-d1-java/releases>
+- Web Javadocs: <https://javadoc.io/doc/io.github.xxvw/cloudflare-d1-java>
+
 ## Security Notes
 
 - Do not hard-code API tokens.

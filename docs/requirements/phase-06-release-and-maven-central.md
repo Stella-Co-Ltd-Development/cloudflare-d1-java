@@ -18,6 +18,8 @@ The POM must include:
 - sources jar
 - javadoc jar
 - signatures
+- SHA-256 checksums
+- offline Javadocs zip
 
 ## GitHub Actions
 
@@ -31,6 +33,9 @@ v*
 
 Automatic Maven Central publication is enabled after Central Portal validation. Maintainers should
 review release inputs before tagging because the tag workflow publishes validated artifacts.
+
+The release workflow must also attach versioned artifacts, signatures, checksums, and offline
+Javadocs to the GitHub Release for the tag.
 
 ## Required Secrets
 
@@ -52,9 +57,12 @@ GPG_PASSPHRASE
 - Sources jar is generated
 - Javadoc jar is generated
 - Artifacts are signed
+- Offline Javadocs zip is generated and contains `index.html`
+- SHA-256 checksums are generated
 - Maven Central namespace is verified
 - GitHub secrets are configured
 - Maven Central deployment is validated and published by the release workflow
-- Version is changed from `0.1.0-SNAPSHOT` to `0.1.0`
-- Git tag `v0.1.0` is created
+- Version references are updated for the release version
+- Git tag matching the release version is created
 - Artifact appears on Maven Central
+- GitHub Release contains the expected versioned assets
