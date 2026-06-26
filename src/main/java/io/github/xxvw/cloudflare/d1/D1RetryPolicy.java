@@ -12,6 +12,15 @@ import java.util.Set;
  *
  * <p>The default policy retries read-style query operations on common transient HTTP statuses.
  * Execute and batch operations do not retry by default.
+ *
+ * <pre>{@code
+ * D1Client client = D1Client.builder()
+ *     .accountId(System.getenv("CLOUDFLARE_ACCOUNT_ID"))
+ *     .databaseId(System.getenv("D1_DATABASE_ID"))
+ *     .apiToken(System.getenv("CLOUDFLARE_API_TOKEN"))
+ *     .retryPolicy(D1RetryPolicy.none())
+ *     .build();
+ * }</pre>
  */
 public final class D1RetryPolicy {
   private final boolean retryQuery;

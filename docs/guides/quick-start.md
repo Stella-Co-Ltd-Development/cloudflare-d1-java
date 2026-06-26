@@ -100,6 +100,13 @@ mvn -f examples/quickstart/pom.xml compile exec:java \
   -Dexec.args="--write"
 ```
 
+To run a fake custom transport example that does not contact Cloudflare:
+
+```bash
+mvn -f examples/quickstart/pom.xml compile exec:java \
+  -Dexec.mainClass=example.CustomTransportExample
+```
+
 To run the opt-in async write example:
 
 ```bash

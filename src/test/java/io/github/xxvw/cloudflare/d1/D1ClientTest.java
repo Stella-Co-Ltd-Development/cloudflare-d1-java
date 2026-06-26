@@ -287,6 +287,38 @@ class D1ClientTest {
   }
 
   @Test
+  void nonJsonHttpErrorsExposeStatusAndKeepExceptionMessagesSanitized() {
+    String sensitiveBody = "not-json test-token sensitive-param";
+    server.enqueue(new MockResponse.Builder().code(400).body(sensitiveBody).build());
+    server.enqueue(new MockResponse.Builder().code(500).body(sensitiveBody).build());
+    D1Client client = testClient(D1RetryPolicy.none());
+
+    assertThatThrownBy(() -> client.query("SELECT * FROM users WHERE secret = ?", "sensitive-param"))
+        .isInstanceOfSatisfying(D1QueryException.class, exception -> {
+          assertThat(exception.statusCode()).hasValue(400);
+          assertThat(exception.getMessage())
+              .doesNotContain("test-token")
+              .doesNotContain("sensitive-param")
+              .doesNotContain("SELECT * FROM users");
+          assertThat(exception.rawBody()).contains(sensitiveBody);
+          assertThat(exception.errors()).isEmpty();
+          assertThat(exception.messages()).isEmpty();
+        });
+
+    assertThatThrownBy(() -> client.query("SELECT * FROM users WHERE secret = ?", "sensitive-param"))
+        .isInstanceOfSatisfying(D1ApiException.class, exception -> {
+          assertThat(exception.statusCode()).hasValue(500);
+          assertThat(exception.getMessage())
+              .doesNotContain("test-token")
+              .doesNotContain("sensitive-param")
+              .doesNotContain("SELECT * FROM users");
+          assertThat(exception.rawBody()).contains(sensitiveBody);
+          assertThat(exception.errors()).isEmpty();
+          assertThat(exception.messages()).isEmpty();
+        });
+  }
+
+  @Test
   void mapsTopLevelAndQueryResultFailures() {
     server.enqueue(ok("{\"success\":false,\"errors\":[{\"code\":1,\"message\":\"top\"}],\"messages\":[]}"));
     server.enqueue(ok("{\"success\":true,\"result\":[{\"success\":false,\"results\":[],"
