@@ -14,6 +14,8 @@ class D1EndpointTest {
         .isEqualTo(URI.create("https://example.com/client/v4/accounts/account/d1/database/database/query"));
     assertThat(D1Endpoint.of("https://example.com/client/v4/", "account", "database").queryUri())
         .isEqualTo(URI.create("https://example.com/client/v4/accounts/account/d1/database/database/query"));
+    assertThat(D1Endpoint.of("https://example.com/client/v4", "account", "database").rawUri())
+        .isEqualTo(URI.create("https://example.com/client/v4/accounts/account/d1/database/database/raw"));
   }
 
   @Test

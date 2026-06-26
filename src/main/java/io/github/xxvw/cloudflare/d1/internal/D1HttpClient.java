@@ -17,7 +17,7 @@ import java.util.Map;
 
 public final class D1HttpClient {
   private final D1Transport transport;
-  private final URI endpoint;
+  private final D1Endpoint endpoint;
   private final String apiToken;
   private final String userAgent;
   private final Duration requestTimeout;
@@ -31,7 +31,7 @@ public final class D1HttpClient {
       Duration requestTimeout,
       D1JsonMapper jsonMapper) {
     this.transport = transport;
-    this.endpoint = endpoint.queryUri();
+    this.endpoint = endpoint;
     this.apiToken = apiToken;
     this.userAgent = userAgent;
     this.requestTimeout = requestTimeout;
@@ -39,20 +39,28 @@ public final class D1HttpClient {
   }
 
   public D1HttpResponse sendQuery(D1Query query, D1Operation operation) {
-    return send(jsonMapper.writeQuery(query), operation);
+    return send(endpoint.queryUri(), jsonMapper.writeQuery(query), operation);
   }
 
   public D1HttpResponse sendBatch(List<D1Query> queries) {
-    return send(jsonMapper.writeBatch(queries), D1Operation.BATCH);
+    return send(endpoint.queryUri(), jsonMapper.writeBatch(queries), D1Operation.BATCH);
   }
 
-  private D1HttpResponse send(String body, D1Operation operation) {
+  public D1HttpResponse sendRawQuery(D1Query query) {
+    return send(endpoint.rawUri(), jsonMapper.writeQuery(query), D1Operation.RAW);
+  }
+
+  public D1HttpResponse sendRawBatch(List<D1Query> queries) {
+    return send(endpoint.rawUri(), jsonMapper.writeBatch(queries), D1Operation.RAW_BATCH);
+  }
+
+  private D1HttpResponse send(URI uri, String body, D1Operation operation) {
     Map<String, String> headers = new LinkedHashMap<>();
     headers.put("Authorization", "Bearer " + apiToken);
     headers.put("Content-Type", "application/json");
     headers.put("Accept", "application/json");
     headers.put("User-Agent", userAgent);
-    D1TransportRequest request = new D1TransportRequest(endpoint, "POST", headers, body, requestTimeout);
+    D1TransportRequest request = new D1TransportRequest(uri, "POST", headers, body, requestTimeout);
     try {
       D1TransportResponse response = transport.send(request);
       return new D1HttpResponse(response.statusCode(), response.headers(), response.body());

@@ -99,6 +99,47 @@ class D1ClientTest {
   }
 
   @Test
+  void rawSendsExpectedPathBodyAndParsesColumnsAndRows() throws Exception {
+    server.enqueue(ok(rawBody("[\"id\",\"name\"]", "[[1,\"Taro\"],[2,null]]", metaBody())));
+    D1Client client = testClient();
+
+    D1RawResult result = client.raw("SELECT id, name FROM users WHERE active = ?", true);
+    RecordedRequest request = server.takeRequest();
+
+    assertThat(request.getMethod()).isEqualTo("POST");
+    assertThat(request.getTarget()).isEqualTo("/client/v4/accounts/test-account-id/d1/database/test-database-id/raw");
+    assertThat(request.getHeaders().get("Authorization")).isEqualTo("Bearer test-token");
+    assertThat(request.getHeaders().get("Content-Type")).isEqualTo("application/json");
+    assertThat(request.getBody().utf8())
+        .isEqualTo("{\"sql\":\"SELECT id, name FROM users WHERE active = ?\",\"params\":[true]}");
+    assertThat(result.columns()).containsExactly("id", "name");
+    assertThat(result.rows()).containsExactly(
+        Arrays.<Object>asList(1, "Taro"),
+        Arrays.<Object>asList(2, null));
+  }
+
+  @Test
+  void rawBatchSendsBatchBodyAndRejectsEmptyBatch() throws Exception {
+    server.enqueue(ok("{\"success\":true,\"result\":["
+        + "{\"success\":true,\"results\":{\"columns\":[\"left\"],\"rows\":[[1]]},\"meta\":{}},"
+        + "{\"success\":true,\"results\":{\"columns\":[\"right\"],\"rows\":[[2]]},\"meta\":{}}"
+        + "],\"errors\":[],\"messages\":[]}"));
+    D1Client client = testClient();
+
+    List<D1RawResult> results = client.rawBatch(
+        D1Query.of("SELECT 1 AS left"),
+        D1Query.of("SELECT 2 AS right"));
+
+    assertThat(results).hasSize(2);
+    assertThat(results.get(0).columns()).containsExactly("left");
+    assertThat(results.get(1).rows()).containsExactly(Collections.<Object>singletonList(2));
+    assertThat(server.takeRequest().getBody().utf8())
+        .isEqualTo("{\"batch\":[{\"sql\":\"SELECT 1 AS left\",\"params\":[]},"
+            + "{\"sql\":\"SELECT 2 AS right\",\"params\":[]}]}");
+    assertThatThrownBy(() -> client.rawBatch(Collections.emptyList())).isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
   void executeReturnsInsertMetadata() {
     server.enqueue(ok(selectBody("[]",
         "{\"changed_db\":true,\"changes\":1,\"last_row_id\":42,\"rows_read\":0,\"rows_written\":1,\"duration\":2.5}")));
@@ -330,6 +371,24 @@ class D1ClientTest {
   }
 
   @Test
+  void mapsRawTopLevelAndResultFailures() {
+    server.enqueue(ok("{\"success\":false,\"errors\":[{\"code\":1,\"message\":\"top\"}],\"messages\":[]}"));
+    server.enqueue(ok("{\"success\":true,\"result\":[{\"success\":false,"
+        + "\"results\":{\"columns\":[],\"rows\":[]},\"errors\":[{\"code\":2,\"message\":\"raw\"}]}],"
+        + "\"errors\":[],\"messages\":[]}"));
+    server.enqueue(ok("{\"success\":true,\"result\":[{\"success\":false,"
+        + "\"results\":{\"columns\":[],\"rows\":[]},\"errors\":[{\"code\":3,\"message\":\"batch\"}]}],"
+        + "\"errors\":[],\"messages\":[]}"));
+    D1Client client = testClient();
+
+    assertThatThrownBy(() -> client.raw("SELECT 1")).isInstanceOf(D1ApiException.class);
+    assertThatThrownBy(() -> client.raw("SELECT 1")).isInstanceOf(D1QueryException.class);
+    assertThatThrownBy(() -> client.rawBatch(D1Query.of("SELECT 1")))
+        .isInstanceOfSatisfying(D1ApiException.class,
+            exception -> assertThat(exception.getMessage()).isEqualTo("D1 raw batch failed"));
+  }
+
+  @Test
   void retriesQueryButDoesNotRetryExecuteByDefault() {
     server.enqueue(new MockResponse.Builder().code(500).body("{\"success\":false}").build());
     server.enqueue(ok(selectBody("[{\"id\":1,\"name\":\"Taro\"}]", metaBody())));
@@ -349,6 +408,25 @@ class D1ClientTest {
     assertThatThrownBy(() -> client.batch(D1Query.of("SELECT 1")))
         .isInstanceOf(D1ApiException.class);
     assertThat(server.getRequestCount()).isEqualTo(4);
+  }
+
+  @Test
+  void retriesRawButDoesNotRetryRawBatchByDefault() {
+    server.enqueue(new MockResponse.Builder().code(500).body("{\"success\":false}").build());
+    server.enqueue(ok(rawBody("[\"value\"]", "[[1]]", metaBody())));
+    server.enqueue(new MockResponse.Builder().code(500).body("{\"success\":false}").build());
+    D1RetryPolicy policy = D1RetryPolicy.builder()
+        .baseDelay(Duration.ZERO)
+        .maxDelay(Duration.ZERO)
+        .jitter(false)
+        .maxRetries(1)
+        .build();
+    D1Client client = testClient(policy);
+
+    assertThat(client.raw("SELECT 1 AS value").rowCount()).isEqualTo(1);
+    assertThatThrownBy(() -> client.rawBatch(D1Query.of("SELECT 1")))
+        .isInstanceOf(D1ApiException.class);
+    assertThat(server.getRequestCount()).isEqualTo(3);
   }
 
   @Test
@@ -457,6 +535,11 @@ class D1ClientTest {
   private static String selectBody(String rows, String meta) {
     return "{\"success\":true,\"result\":[{\"success\":true,\"results\":" + rows + ",\"meta\":" + meta
         + "}],\"errors\":[],\"messages\":[]}";
+  }
+
+  private static String rawBody(String columns, String rows, String meta) {
+    return "{\"success\":true,\"result\":[{\"success\":true,\"results\":{\"columns\":" + columns
+        + ",\"rows\":" + rows + "},\"meta\":" + meta + "}],\"errors\":[],\"messages\":[]}";
   }
 
   private static String metaBody() {

@@ -8,6 +8,7 @@ import io.github.xxvw.cloudflare.d1.internal.D1JsonMapper;
 import io.github.xxvw.cloudflare.d1.internal.D1ResponseParser;
 import io.github.xxvw.cloudflare.d1.internal.D1RetryExecutor;
 import io.github.xxvw.cloudflare.d1.internal.dto.D1ApiResponseDto;
+import io.github.xxvw.cloudflare.d1.internal.dto.D1RawApiResponseDto;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -360,6 +361,84 @@ public final class D1Client implements AutoCloseable {
   }
 
   /**
+   * Runs a raw SQL query without positional parameters.
+   *
+   * @param sql SQL text to execute
+   * @return parsed raw D1 result
+   */
+  public D1RawResult raw(String sql) {
+    return raw(D1Query.of(sql));
+  }
+
+  /**
+   * Runs a raw SQL query with positional parameters.
+   *
+   * @param sql SQL text to execute
+   * @param params positional parameter values
+   * @return parsed raw D1 result
+   */
+  public D1RawResult raw(String sql, Object... params) {
+    return raw(D1Query.of(sql, params));
+  }
+
+  /**
+   * Runs a raw SQL query with positional parameters.
+   *
+   * @param sql SQL text to execute
+   * @param params positional parameter values
+   * @return parsed raw D1 result
+   */
+  public D1RawResult raw(String sql, List<?> params) {
+    return raw(D1Query.of(sql, params));
+  }
+
+  /**
+   * Runs a prepared raw D1 query.
+   *
+   * @param query query object
+   * @return parsed raw D1 result
+   */
+  public D1RawResult raw(D1Query query) {
+    return executeRawSingle(Objects.requireNonNull(query, "query must not be null"));
+  }
+
+  /**
+   * Executes a raw batch of D1 queries.
+   *
+   * @param queries non-empty query list
+   * @return immutable list of raw result items
+   */
+  public List<D1RawResult> rawBatch(List<D1Query> queries) {
+    ensureOpen();
+    List<D1Query> checked = validateBatch(queries);
+    D1HttpResponse response = retryExecutor.execute(D1Operation.RAW_BATCH, () -> httpClient.sendRawBatch(checked));
+    if (!isSuccessfulStatus(response.statusCode())) {
+      throw exceptionFactory.httpException(response, D1Operation.RAW_BATCH, null);
+    }
+    D1RawApiResponseDto apiResponse = parseRawApiResponse(response);
+    if (apiResponse.success != null && !apiResponse.success) {
+      throw exceptionFactory.topLevelRawFailure(
+          response.statusCode(), response.body(), D1Operation.RAW_BATCH, apiResponse, null);
+    }
+    List<D1RawResult> results = responseParser.parseRawBatch(apiResponse, response.body());
+    if (results.stream().anyMatch(result -> !result.success())) {
+      throw exceptionFactory.rawBatchFailure(response.statusCode(), response.body(), results);
+    }
+    return results;
+  }
+
+  /**
+   * Executes a raw batch of D1 queries.
+   *
+   * @param queries non-empty query array
+   * @return immutable list of raw result items
+   */
+  public List<D1RawResult> rawBatch(D1Query... queries) {
+    Objects.requireNonNull(queries, "queries must not be null");
+    return rawBatch(Arrays.asList(queries));
+  }
+
+  /**
    * Deprecated preview asynchronous query API.
    *
    * <p>Use {@link D1AsyncClient#queryAsync(String, Object...)} for supported async operations.
@@ -426,9 +505,41 @@ public final class D1Client implements AutoCloseable {
     return result;
   }
 
+  private D1RawResult executeRawSingle(D1Query query) {
+    ensureOpen();
+    D1HttpResponse response = retryExecutor.execute(D1Operation.RAW, () -> httpClient.sendRawQuery(query));
+    if (!isSuccessfulStatus(response.statusCode())) {
+      throw exceptionFactory.httpException(response, D1Operation.RAW, query.sql());
+    }
+    D1RawApiResponseDto apiResponse = parseRawApiResponse(response);
+    if (apiResponse.success != null && !apiResponse.success) {
+      throw exceptionFactory.topLevelRawFailure(
+          response.statusCode(), response.body(), D1Operation.RAW, apiResponse, query.sql());
+    }
+    D1RawResult result = responseParser.parseRawSingle(apiResponse, response.body());
+    if (!result.success()) {
+      throw exceptionFactory.rawFailure(response.statusCode(), response.body(), D1Operation.RAW, result, query.sql());
+    }
+    return result;
+  }
+
   private D1ApiResponseDto parseApiResponse(D1HttpResponse response) {
     try {
       return responseParser.parseApiResponse(response.body());
+    } catch (JsonProcessingException e) {
+      throw new D1ApiException(
+          "D1 API response was not valid JSON",
+          null,
+          response.statusCode(),
+          response.body(),
+          Collections.<D1ResponseInfo>emptyList(),
+          Collections.<D1ResponseInfo>emptyList());
+    }
+  }
+
+  private D1RawApiResponseDto parseRawApiResponse(D1HttpResponse response) {
+    try {
+      return responseParser.parseRawApiResponse(response.body());
     } catch (JsonProcessingException e) {
       throw new D1ApiException(
           "D1 API response was not valid JSON",

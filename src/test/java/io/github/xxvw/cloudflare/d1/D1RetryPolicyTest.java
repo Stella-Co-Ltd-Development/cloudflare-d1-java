@@ -18,6 +18,8 @@ class D1RetryPolicyTest {
     assertThat(policy.retryQuery()).isTrue();
     assertThat(policy.retryExecute()).isFalse();
     assertThat(policy.retryBatch()).isFalse();
+    assertThat(policy.retryRaw()).isTrue();
+    assertThat(policy.retryRawBatch()).isFalse();
     assertThat(policy.maxRetries()).isEqualTo(2);
     assertThat(policy.baseDelay()).isEqualTo(Duration.ofMillis(200));
     assertThat(policy.maxDelay()).isEqualTo(Duration.ofSeconds(2));
@@ -33,6 +35,8 @@ class D1RetryPolicyTest {
     assertThat(policy.retryQuery()).isFalse();
     assertThat(policy.retryExecute()).isFalse();
     assertThat(policy.retryBatch()).isFalse();
+    assertThat(policy.retryRaw()).isFalse();
+    assertThat(policy.retryRawBatch()).isFalse();
     assertThat(policy.maxRetries()).isZero();
   }
 
