@@ -344,7 +344,9 @@ public final class D1Client implements AutoCloseable {
   }
 
   /**
-   * Preview asynchronous query API.
+   * Deprecated preview asynchronous query API.
+   *
+   * <p>Use {@link D1AsyncClient#queryAsync(String, Object...)} for supported async operations.
    *
    * @param sql SQL text to execute
    * @param params positional parameter values
@@ -356,7 +358,9 @@ public final class D1Client implements AutoCloseable {
   }
 
   /**
-   * Preview asynchronous execute API.
+   * Deprecated preview asynchronous execute API.
+   *
+   * <p>Use {@link D1AsyncClient#executeAsync(String, Object...)} for supported async operations.
    *
    * @param sql SQL text to execute
    * @param params positional parameter values
@@ -368,7 +372,9 @@ public final class D1Client implements AutoCloseable {
   }
 
   /**
-   * Preview asynchronous batch API.
+   * Deprecated preview asynchronous batch API.
+   *
+   * <p>Use {@link D1AsyncClient#batchAsync(List)} for supported async operations.
    *
    * @param queries non-empty query list
    * @return future completed with immutable result items

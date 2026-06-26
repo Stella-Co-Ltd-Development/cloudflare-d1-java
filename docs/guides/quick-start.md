@@ -78,6 +78,21 @@ To run a different read query:
 mvn -f examples/quickstart/pom.xml exec:java -Dexec.args="SELECT 42 AS answer"
 ```
 
+To run the read-only async examples:
+
+```bash
+mvn -f examples/quickstart/pom.xml compile exec:java \
+  -Dexec.mainClass=example.AsyncExamples
+```
+
+To run the opt-in async write example:
+
+```bash
+mvn -f examples/quickstart/pom.xml compile exec:java \
+  -Dexec.mainClass=example.AsyncExamples \
+  -Dexec.args="--write"
+```
+
 ## Execute a Write
 
 ```java
