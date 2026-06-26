@@ -11,6 +11,17 @@ It is a lightweight SDK for Java applications that need direct REST API access t
 
 The D1 REST API is a good fit for server-side tools, administration, batch jobs, and migration-style workflows. For latency-sensitive application traffic, also consider a Cloudflare Worker proxy or the Workers D1 binding.
 
+## Why use this client?
+
+- Use typed Java APIs instead of hand-written HTTP requests and response parsing.
+- Keep Java 8 compatibility for older tools and deployment environments.
+- Run synchronous or asynchronous D1 REST API calls from server-side Java code.
+- Map query rows to immutable maps or Jackson-backed model classes.
+- Get built-in retry handling for transient read failures and rate limits.
+- Avoid extra runtime infrastructure dependencies beyond `jackson-databind`.
+
+Use the Workers D1 binding for code running inside Cloudflare Workers. Use a Worker proxy when application traffic needs lower latency, custom authorization, or tighter control over public access.
+
 ## Installation
 
 ```xml
@@ -38,6 +49,19 @@ Runtime dependency:
 
 - `jackson-databind`
 
+## At a Glance
+
+| Area | Support |
+|---|---|
+| Java | Java 8 or newer |
+| Distribution | Maven Central |
+| Runtime dependency | `jackson-databind` |
+| API style | Synchronous `D1Client` and asynchronous `D1AsyncClient` |
+| D1 operations | Query, query first row, execute, batch |
+| Mapping | `Map<String, Object>` rows and Jackson-backed typed rows |
+| Retries | Enabled for transient read failures by default |
+| Non-goals | JDBC, ORM, SQL builder, migrations, Spring Boot starter |
+
 ## Quick Start
 
 Set credentials with environment variables:
@@ -60,6 +84,12 @@ try (D1Client d1 = D1Client.fromEnv()) {
 }
 ```
 
+For a one-minute local check, run the bundled example:
+
+```bash
+mvn -f examples/quickstart/pom.xml compile exec:java
+```
+
 You can also configure values explicitly:
 
 ```java
@@ -74,7 +104,7 @@ See [Quick Start](docs/guides/quick-start.md) for a complete copy-paste friendly
 
 ## Runnable Example
 
-The repository includes a standalone Maven example in `examples/quickstart`.
+The repository includes standalone Maven examples in `examples/quickstart`.
 
 ```bash
 export CLOUDFLARE_ACCOUNT_ID="your-account-id"
@@ -96,6 +126,17 @@ Pass a SQL statement as `exec.args` to try another read query:
 
 ```bash
 mvn -f examples/quickstart/pom.xml exec:java -Dexec.args="SELECT 42 AS answer"
+```
+
+Run typed mapping and opt-in write examples:
+
+```bash
+mvn -f examples/quickstart/pom.xml compile exec:java \
+  -Dexec.mainClass=example.MappingAndWriteExamples
+
+mvn -f examples/quickstart/pom.xml compile exec:java \
+  -Dexec.mainClass=example.MappingAndWriteExamples \
+  -Dexec.args="--write"
 ```
 
 ## Supported Operations
@@ -312,14 +353,16 @@ https://api.cloudflare.com/client/v4
 
 ## Troubleshooting
 
-| Symptom | Check |
+| Symptom | First check |
 |---|---|
-| `D1AuthenticationException` | The API token is missing, expired, malformed, or not being passed to the client. |
-| `D1AuthorizationException` | The token does not have permission for the account or database. |
-| `D1QueryException` | SQL failed at D1. Inspect `errors()` and, when appropriate, `sql()`. |
+| `D1AuthenticationException` | Confirm `CLOUDFLARE_API_TOKEN` is present, current, and passed to the client. |
+| `D1AuthorizationException` | Confirm token permissions, account ID, and database ID. |
+| `D1QueryException` | Confirm the SQL works in D1 and inspect `errors()`. |
 | `D1RateLimitException` | Respect `retryAfter()` and reduce request rate. |
-| `D1TimeoutException` | Check network connectivity and consider increasing request timeout. |
-| Empty result rows | Confirm the SQL query, target database ID, and whether the statement returns rows. |
+| `D1MappingException` | Confirm selected column names match the target Java model. |
+| `D1TimeoutException` | Check network connectivity and request timeout settings. |
+
+See [Troubleshooting](docs/guides/troubleshooting.md) for common setup, API, and mapping failures.
 
 ## Documentation
 
@@ -329,6 +372,9 @@ https://api.cloudflare.com/client/v4
 - [Retry Policy](docs/guides/retry-policy.md)
 - [Error Handling](docs/guides/error-handling.md)
 - [Custom Transport](docs/guides/custom-transport.md)
+- [Compatibility and Support](docs/guides/compatibility-support.md)
+- [Production Usage Notes](docs/guides/production-usage.md)
+- [Troubleshooting](docs/guides/troubleshooting.md)
 - [Release Readiness](docs/release/release-readiness.md)
 - [Implementation Requirements](docs/implementation-requirements/README.md)
 - Cloudflare D1 REST API import tutorial: <https://developers.cloudflare.com/d1/tutorials/import-to-d1-with-rest-api/>
@@ -351,6 +397,10 @@ https://api.cloudflare.com/client/v4
 - No Spring Boot starter.
 - No Cloudflare Workers Binding API support.
 - No logging framework integration.
+
+## API Stability
+
+The `0.x` series is intended to stay small and practical while the public API is refined. Public classes in `io.github.xxvw.cloudflare.d1` are the supported API surface. Internal classes under `io.github.xxvw.cloudflare.d1.internal` may change without notice.
 
 ## Contributing
 

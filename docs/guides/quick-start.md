@@ -85,6 +85,21 @@ mvn -f examples/quickstart/pom.xml compile exec:java \
   -Dexec.mainClass=example.AsyncExamples
 ```
 
+To run read and typed mapping examples:
+
+```bash
+mvn -f examples/quickstart/pom.xml compile exec:java \
+  -Dexec.mainClass=example.MappingAndWriteExamples
+```
+
+To run the opt-in write example:
+
+```bash
+mvn -f examples/quickstart/pom.xml compile exec:java \
+  -Dexec.mainClass=example.MappingAndWriteExamples \
+  -Dexec.args="--write"
+```
+
 To run the opt-in async write example:
 
 ```bash

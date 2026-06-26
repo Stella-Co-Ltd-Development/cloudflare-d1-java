@@ -6,6 +6,12 @@ This project follows Semantic Versioning.
 
 ## [Unreleased]
 
+### Changed
+
+- Improved README positioning, adoption guidance, compatibility notes, and troubleshooting links.
+- Added compatibility, production usage, and troubleshooting guides.
+- Added runnable quickstart examples for typed mapping and opt-in write operations.
+
 ## [0.1.3] - 2026-06-26
 
 ### Changed
