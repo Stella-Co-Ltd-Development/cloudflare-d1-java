@@ -6,6 +6,8 @@ This project follows Semantic Versioning.
 
 ## [Unreleased]
 
+## [0.1.4] - 2026-06-26
+
 ### Changed
 
 - Improved README positioning, adoption guidance, compatibility notes, and troubleshooting links.
