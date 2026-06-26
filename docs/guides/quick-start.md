@@ -14,6 +14,12 @@
 
 Java 8 or newer is required.
 
+Gradle:
+
+```groovy
+implementation "io.github.xxvw:cloudflare-d1-java:0.1.2"
+```
+
 ## Configure Credentials
 
 Set the required environment variables:
@@ -46,6 +52,32 @@ public final class Example {
 }
 ```
 
+## Run the Repository Example
+
+The repository includes a standalone Maven example that runs the same flow from environment variables.
+
+```bash
+export CLOUDFLARE_ACCOUNT_ID="your-account-id"
+export D1_DATABASE_ID="your-d1-database-id"
+export CLOUDFLARE_API_TOKEN="your-api-token"
+
+mvn -f examples/quickstart/pom.xml compile exec:java
+```
+
+Expected output for the default query:
+
+```text
+SQL: SELECT 1 AS value
+Rows: 1
+{value=1}
+```
+
+To run a different read query:
+
+```bash
+mvn -f examples/quickstart/pom.xml exec:java -Dexec.args="SELECT 42 AS answer"
+```
+
 ## Execute a Write
 
 ```java
@@ -66,3 +98,4 @@ Writes do not retry by default because the statement may not be idempotent.
 - Confirm the database ID is the D1 database ID, not the database name.
 - Confirm the token has permission for the target account and database.
 - Confirm the SQL statement works in the Cloudflare dashboard or Wrangler before debugging Java code.
+- Confirm the D1 REST API is the right path for your workflow. For application traffic that needs lower latency, consider a Cloudflare Worker proxy or the Workers D1 binding.

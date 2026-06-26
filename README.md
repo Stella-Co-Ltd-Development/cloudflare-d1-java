@@ -2,12 +2,14 @@
 
 [![CI](https://github.com/Stella-Co-Ltd-Development/cloudflare-d1-java/actions/workflows/ci.yml/badge.svg)](https://github.com/Stella-Co-Ltd-Development/cloudflare-d1-java/actions/workflows/ci.yml)
 [![Maven Central](https://img.shields.io/maven-central/v/io.github.xxvw/cloudflare-d1-java.svg)](https://central.sonatype.com/artifact/io.github.xxvw/cloudflare-d1-java)
-[![Javadocs](https://javadoc.io/badge2/io.github.xxvw/cloudflare-d1-java/javadoc.svg)](https://javadoc.io/doc/io.github.xxvw/cloudflare-d1-java)
+[![Javadocs](https://javadoc.io/badge2/io.github.xxvw/cloudflare-d1-java/0.1.2/javadoc.svg)](https://javadoc.io/doc/io.github.xxvw/cloudflare-d1-java/0.1.2)
 [![License](https://img.shields.io/github/license/Stella-Co-Ltd-Development/cloudflare-d1-java.svg?cacheSeconds=3600)](LICENSE)
 
 `cloudflare-d1-java` is an unofficial Java client for the Cloudflare D1 REST API.
 
 It is a lightweight SDK for Java applications that need direct REST API access to D1. It is not a JDBC driver, ORM, SQL builder, migration tool, Spring Boot starter, or Cloudflare Workers binding client.
+
+The D1 REST API is a good fit for server-side tools, administration, batch jobs, and migration-style workflows. For latency-sensitive application traffic, also consider a Cloudflare Worker proxy or the Workers D1 binding.
 
 ## Installation
 
@@ -17,6 +19,12 @@ It is a lightweight SDK for Java applications that need direct REST API access t
   <artifactId>cloudflare-d1-java</artifactId>
   <version>0.1.2</version>
 </dependency>
+```
+
+Gradle:
+
+```groovy
+implementation "io.github.xxvw:cloudflare-d1-java:0.1.2"
 ```
 
 Requirements:
@@ -63,6 +71,32 @@ D1Client d1 = D1Client.builder()
 ```
 
 See [Quick Start](docs/guides/quick-start.md) for a complete copy-paste friendly example.
+
+## Runnable Example
+
+The repository includes a standalone Maven example in `examples/quickstart`.
+
+```bash
+export CLOUDFLARE_ACCOUNT_ID="your-account-id"
+export D1_DATABASE_ID="your-d1-database-id"
+export CLOUDFLARE_API_TOKEN="your-api-token"
+
+mvn -f examples/quickstart/pom.xml compile exec:java
+```
+
+Expected output for the default query:
+
+```text
+SQL: SELECT 1 AS value
+Rows: 1
+{value=1}
+```
+
+Pass a SQL statement as `exec.args` to try another read query:
+
+```bash
+mvn -f examples/quickstart/pom.xml exec:java -Dexec.args="SELECT 42 AS answer"
+```
 
 ## Supported Operations
 
@@ -262,6 +296,7 @@ https://api.cloudflare.com/client/v4
 | `D1AuthorizationException` | The token does not have permission for the account or database. |
 | `D1QueryException` | SQL failed at D1. Inspect `errors()` and, when appropriate, `sql()`. |
 | `D1RateLimitException` | Respect `retryAfter()` and reduce request rate. |
+| `D1TimeoutException` | Check network connectivity and consider increasing request timeout. |
 | Empty result rows | Confirm the SQL query, target database ID, and whether the statement returns rows. |
 
 ## Documentation
@@ -273,6 +308,8 @@ https://api.cloudflare.com/client/v4
 - [Custom Transport](docs/guides/custom-transport.md)
 - [Release Readiness](docs/release/release-readiness.md)
 - [Implementation Requirements](docs/implementation-requirements/README.md)
+- Cloudflare D1 REST API import tutorial: <https://developers.cloudflare.com/d1/tutorials/import-to-d1-with-rest-api/>
+- Cloudflare Worker proxy tutorial: <https://developers.cloudflare.com/d1/tutorials/build-an-api-to-access-d1/>
 
 ## Security Notes
 

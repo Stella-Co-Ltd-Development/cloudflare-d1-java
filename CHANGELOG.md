@@ -11,6 +11,7 @@ This project follows Semantic Versioning.
 - Enabled automatic Maven Central publishing after release validation.
 - Added a manual workflow for publishing validated Maven Central deployments.
 - Replaced the shortened license file with Apache License 2.0 text for GitHub license detection.
+- Added first-run quickstart example documentation and expected output.
 
 ## [0.1.2] - 2026-06-23
 
