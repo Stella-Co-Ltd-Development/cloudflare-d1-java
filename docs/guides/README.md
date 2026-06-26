@@ -3,6 +3,7 @@
 These guides are for application developers using `cloudflare-d1-java`.
 
 - [Quick Start](quick-start.md)
+- [Async API](async.md)
 - [Typed Mapping](typed-mapping.md)
 - [Retry Policy](retry-policy.md)
 - [Error Handling](error-handling.md)

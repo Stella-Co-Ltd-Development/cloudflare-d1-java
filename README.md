@@ -107,6 +107,7 @@ mvn -f examples/quickstart/pom.xml exec:java -Dexec.args="SELECT 42 AS answer"
 | Execute writes | `execute(...)` | Does not retry by default |
 | Batch statements | `batch(...)` | Does not retry by default |
 | Typed row mapping | `query(..., User.class)` | Same as query |
+| Async operations | `D1AsyncClient` | Same as the underlying operation |
 
 Parameters may be `String`, `Number`, `Boolean`, or `null`. Convert dates, JSON values, and custom objects to strings before passing them as SQL parameters.
 
@@ -266,15 +267,36 @@ D1Client client = D1Client.builder()
 
 See [Custom Transport](docs/guides/custom-transport.md) for implementation notes.
 
-## Async Preview
+## Async API
 
-The async methods are preview APIs and are marked deprecated to avoid treating their signatures as stable:
+Use `D1AsyncClient` for supported asynchronous operations:
 
 ```java
-CompletableFuture<D1Result> future = d1.queryAsync("SELECT 1");
+try (D1AsyncClient d1 = D1AsyncClient.fromEnv()) {
+  CompletableFuture<D1Result> future = d1.queryAsync("SELECT 1 AS value");
+  D1Result result = future.join();
+  System.out.println(result.firstRow());
+}
 ```
 
-Failures complete the future exceptionally.
+Async operations run on a Java `Executor` and complete futures exceptionally with the same public exception types as synchronous operations.
+
+Run the read-only async examples:
+
+```bash
+mvn -f examples/quickstart/pom.xml compile exec:java \
+  -Dexec.mainClass=example.AsyncExamples
+```
+
+Run the opt-in write example:
+
+```bash
+mvn -f examples/quickstart/pom.xml compile exec:java \
+  -Dexec.mainClass=example.AsyncExamples \
+  -Dexec.args="--write"
+```
+
+See [Async API](docs/guides/async.md) for executor configuration and failure handling.
 
 ## Finding Cloudflare IDs
 
@@ -302,6 +324,7 @@ https://api.cloudflare.com/client/v4
 ## Documentation
 
 - [Quick Start](docs/guides/quick-start.md)
+- [Async API](docs/guides/async.md)
 - [Typed Mapping](docs/guides/typed-mapping.md)
 - [Retry Policy](docs/guides/retry-policy.md)
 - [Error Handling](docs/guides/error-handling.md)

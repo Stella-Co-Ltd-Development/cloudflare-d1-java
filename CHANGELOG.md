@@ -13,6 +13,7 @@ This project follows Semantic Versioning.
 - Replaced the shortened license file with Apache License 2.0 text for GitHub license detection.
 - Added first-run quickstart example documentation and expected output.
 - Added cross-agent development instruction entrypoints.
+- Added supported asynchronous client APIs, documentation, tests, and runnable examples.
 
 ## [0.1.2] - 2026-06-23
 
