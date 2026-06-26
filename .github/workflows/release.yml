@@ -52,13 +52,13 @@ jobs:
           path: target/cloudflare-d1-java-*.jar
 
   publish:
-    name: Publish to Maven Central
+    name: Publish and attach release assets
     needs: verify
     runs-on: ubuntu-latest
     environment: maven-central
     timeout-minutes: 30
     permissions:
-      contents: read
+      contents: write
 
     steps:
       - name: Checkout
@@ -82,3 +82,88 @@ jobs:
           CENTRAL_USERNAME: ${{ secrets.CENTRAL_USERNAME }}
           CENTRAL_PASSWORD: ${{ secrets.CENTRAL_PASSWORD }}
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+
+      - name: Prepare release assets
+        env:
+          VERSION: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+
+          version="${VERSION#v}"
+          base="cloudflare-d1-java-${version}"
+          javadocs_zip="target/${base}-javadocs.zip"
+          checksums="target/${base}-checksums.txt"
+
+          test -f "target/${base}.jar"
+          test -f "target/${base}-sources.jar"
+          test -f "target/${base}-javadoc.jar"
+          test -f "target/${base}.jar.asc"
+          test -f "target/${base}-sources.jar.asc"
+          test -f "target/${base}-javadoc.jar.asc"
+          test -f "target/cloudflare-d1-java-${version}.pom.asc"
+          test -f "target/reports/apidocs/index.html"
+
+          (cd target/reports/apidocs && zip -qr "../../${base}-javadocs.zip" .)
+          unzip -Z1 "${javadocs_zip}" > "target/${base}-javadocs-files.txt"
+          grep -qx 'index.html' "target/${base}-javadocs-files.txt"
+
+          (
+            cd target
+            shasum -a 256 \
+              "${base}.jar" \
+              "${base}-sources.jar" \
+              "${base}-javadoc.jar" \
+              "${base}-javadocs.zip" \
+              "${base}.jar.asc" \
+              "${base}-sources.jar.asc" \
+              "${base}-javadoc.jar.asc" \
+              "cloudflare-d1-java-${version}.pom.asc"
+          ) > "${checksums}"
+
+      - name: Upload GitHub release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+
+          version="${VERSION#v}"
+          base="cloudflare-d1-java-${version}"
+          title="${VERSION}"
+          notes_file="$(mktemp)"
+          changelog_file="$(mktemp)"
+
+          awk -v version="${version}" '
+            $0 ~ "^## \\[" version "\\]" { found = 1; next }
+            found && $0 ~ "^## \\[" { exit }
+            found { print }
+          ' CHANGELOG.md > "${changelog_file}"
+
+          {
+            echo "Release ${VERSION}"
+            echo
+            if [ -s "${changelog_file}" ]; then
+              cat "${changelog_file}"
+              echo
+            fi
+            echo "Artifacts are also published to Maven Central."
+            echo
+            echo "Attached assets include the main jar, sources jar, javadoc jar, offline Javadocs zip, signatures, and SHA-256 checksums."
+          } > "${notes_file}"
+
+          if gh release view "${VERSION}" >/dev/null 2>&1; then
+            gh release edit "${VERSION}" --title "${title}" --notes-file "${notes_file}"
+          else
+            gh release create "${VERSION}" --title "${title}" --notes-file "${notes_file}" --verify-tag
+          fi
+
+          gh release upload "${VERSION}" --clobber \
+            "target/${base}.jar" \
+            "target/${base}-sources.jar" \
+            "target/${base}-javadoc.jar" \
+            "target/${base}-javadocs.zip" \
+            "target/${base}.jar.asc" \
+            "target/${base}-sources.jar.asc" \
+            "target/${base}-javadoc.jar.asc" \
+            "target/cloudflare-d1-java-${version}.pom.asc" \
+            "target/${base}-checksums.txt"
