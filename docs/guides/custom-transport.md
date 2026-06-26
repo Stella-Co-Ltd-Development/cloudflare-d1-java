@@ -25,3 +25,15 @@ D1Client client = D1Client.builder()
 - Do not log API tokens or authorization headers.
 
 The custom transport does not change JSON parsing, retry behavior, or exception mapping.
+
+## Runnable Fake Transport Example
+
+The quickstart module includes an example that inspects the generated request and returns a fake D1
+response without contacting Cloudflare:
+
+```bash
+mvn -f examples/quickstart/pom.xml compile exec:java \
+  -Dexec.mainClass=example.CustomTransportExample
+```
+
+The example uses fake credential values and does not print authorization headers.

@@ -14,6 +14,15 @@ import java.util.function.Supplier;
  * <p>This client executes the same operations as {@link D1Client} on a configured {@link Executor}
  * and returns {@link CompletableFuture} values. Failed requests complete futures exceptionally with
  * the same public exception types as synchronous operations.
+ *
+ * <pre>{@code
+ * try (D1AsyncClient d1 = D1AsyncClient.fromEnv()) {
+ *   CompletableFuture<D1Result> future =
+ *       d1.queryAsync("SELECT id, name FROM users WHERE active = ?", true);
+ *   D1Result result = future.join();
+ *   System.out.println(result.rows());
+ * }
+ * }</pre>
  */
 public final class D1AsyncClient implements AutoCloseable {
   private final D1Client delegate;

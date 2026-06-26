@@ -11,6 +11,9 @@ This project follows Semantic Versioning.
 - Improved README positioning, adoption guidance, compatibility notes, and troubleshooting links.
 - Added compatibility, production usage, and troubleshooting guides.
 - Added runnable quickstart examples for typed mapping and opt-in write operations.
+- Added public Javadoc examples for common client and retry-policy usage.
+- Added a runnable fake custom transport example.
+- Added focused non-JSON HTTP error tests for status exposure and sanitized exception messages.
 
 ## [0.1.3] - 2026-06-26
 

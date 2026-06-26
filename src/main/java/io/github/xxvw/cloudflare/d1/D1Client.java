@@ -23,6 +23,22 @@ import java.util.function.Function;
  *
  * <p>Create instances with {@link #builder()} or {@link #fromEnv()}. Instances are closeable to
  * prevent accidental reuse after application shutdown.
+ *
+ * <pre>{@code
+ * try (D1Client d1 = D1Client.fromEnv()) {
+ *   D1Result result = d1.query("SELECT id, name FROM users WHERE active = ?", true);
+ *   result.rows().forEach(System.out::println);
+ * }
+ * }</pre>
+ *
+ * <p>Typed queries map each returned row with Jackson:
+ *
+ * <pre>{@code
+ * List<User> users = d1.query(
+ *     "SELECT id, name, email FROM users WHERE active = ?",
+ *     User.class,
+ *     true);
+ * }</pre>
  */
 public final class D1Client implements AutoCloseable {
   private static final String ENV_ACCOUNT_ID = "CLOUDFLARE_ACCOUNT_ID";
