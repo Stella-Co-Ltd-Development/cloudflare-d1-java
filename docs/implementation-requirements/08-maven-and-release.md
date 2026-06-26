@@ -86,6 +86,7 @@ Release profile must:
 - generate javadoc jar
 - sign artifacts
 - publish to Maven Central through Central Portal
+- support release workflow checksums and offline Javadocs assets
 
 ## GitHub Actions
 
@@ -105,6 +106,7 @@ Release workflow:
 - use GPG private key from secrets
 - run `mvn -B clean deploy -Prelease`
 - publish the deployment automatically after Central Portal validation
+- attach versioned jars, signatures, checksums, and offline Javadocs zip to the GitHub Release
 
 ## Required Secrets
 
@@ -126,9 +128,12 @@ GPG_PASSPHRASE
 - Sources jar is generated
 - Javadoc jar is generated
 - Artifacts are signed
+- Offline Javadocs zip is generated and contains `index.html`
+- SHA-256 checksums are generated
 - Maven Central namespace is verified
 - GitHub secrets are configured
 - Maven Central deployment is validated and published by the release workflow
-- Version is changed from `0.1.0-SNAPSHOT` to `0.1.0`
-- Git tag `v0.1.0` is created
+- Version references are updated for the release version
+- Git tag matching the release version is created
 - Artifact appears on Maven Central
+- GitHub Release contains the expected versioned assets
