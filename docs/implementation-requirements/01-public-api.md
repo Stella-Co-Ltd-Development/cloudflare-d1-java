@@ -34,6 +34,10 @@ CLOUDFLARE_API_TOKEN
 
 If an environment variable is missing or blank, `fromEnv()` must throw `IllegalStateException`.
 
+The repository must include a tracked `.env.example` file with these variable names so contributors
+can create a local ignored `.env` file for manual testing. `.env` files must remain ignored and must
+not contain committed secrets.
+
 ## D1ClientBuilder
 
 Required builder methods:

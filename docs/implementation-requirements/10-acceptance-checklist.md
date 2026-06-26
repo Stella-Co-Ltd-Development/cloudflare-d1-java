@@ -4,6 +4,7 @@
 
 - [ ] `D1Client.builder()` works.
 - [ ] `D1Client.fromEnv()` works.
+- [ ] `.env.example` documents the variables required by `D1Client.fromEnv()`.
 - [ ] `query()` works with no params.
 - [ ] `query()` works with varargs params.
 - [ ] `query()` works with list params.
