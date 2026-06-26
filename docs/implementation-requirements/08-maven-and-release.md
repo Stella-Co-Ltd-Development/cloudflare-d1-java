@@ -104,7 +104,7 @@ Release workflow:
 - use Maven Central credentials from secrets
 - use GPG private key from secrets
 - run `mvn -B clean deploy -Prelease`
-- upload the deployment with automatic Maven Central publication disabled
+- publish the deployment automatically after Central Portal validation
 
 ## Required Secrets
 
@@ -128,7 +128,7 @@ GPG_PASSPHRASE
 - Artifacts are signed
 - Maven Central namespace is verified
 - GitHub secrets are configured
-- Maven Central deployment is reviewed before publication
+- Maven Central deployment is validated and published by the release workflow
 - Version is changed from `0.1.0-SNAPSHOT` to `0.1.0`
 - Git tag `v0.1.0` is created
 - Artifact appears on Maven Central
