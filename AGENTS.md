@@ -4,6 +4,14 @@ This repository contains `cloudflare-d1-java`, an unofficial Java client for the
 
 These instructions apply to all automated or AI-assisted coding agents working in this repository.
 
+## Source of Truth
+
+This file is the authoritative repository instruction file for automated or AI-assisted coding work.
+
+Tool-specific instruction files in this repository are lightweight entrypoints. They must point back to this file and must not redefine conflicting workflow, security, dependency, testing, or public API policy.
+
+When instruction policy changes, update this file first and then update tool-specific entrypoints only as needed.
+
 ## Required Workflow
 
 1. Create a new branch before editing files.
@@ -88,7 +96,7 @@ Rules:
 
 ## Dependency Rules
 
-For v0.1.0:
+For v0.1.x:
 
 Runtime dependency:
 
