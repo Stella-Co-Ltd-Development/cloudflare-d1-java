@@ -9,5 +9,9 @@ public enum D1Operation {
   /** Execute/write operation. */
   EXECUTE,
   /** Batch operation. */
-  BATCH
+  BATCH,
+  /** Raw query operation. */
+  RAW,
+  /** Raw batch operation. */
+  RAW_BATCH
 }

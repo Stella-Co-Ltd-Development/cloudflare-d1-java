@@ -15,6 +15,7 @@ This project follows Semantic Versioning.
 - Added a runnable fake custom transport example.
 - Added focused non-JSON HTTP error tests for status exposure and sanitized exception messages.
 - Added the raw result model and internal raw response parsing foundation.
+- Added synchronous raw query and raw batch APIs for Cloudflare D1 `/raw`.
 
 ## [0.1.3] - 2026-06-26
 

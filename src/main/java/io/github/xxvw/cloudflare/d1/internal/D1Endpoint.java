@@ -25,6 +25,14 @@ public final class D1Endpoint {
   }
 
   public URI queryUri() {
+    return operationUri("query");
+  }
+
+  public URI rawUri() {
+    return operationUri("raw");
+  }
+
+  private URI operationUri(String operationPath) {
     String path = baseUrl.getRawPath();
     if (path == null || path.trim().isEmpty()) {
       path = "";
@@ -34,7 +42,8 @@ public final class D1Endpoint {
         + encodePathSegment(accountId)
         + "/d1/database/"
         + encodePathSegment(databaseId)
-        + "/query";
+        + "/"
+        + operationPath;
     StringBuilder uri = new StringBuilder()
         .append(baseUrl.getScheme())
         .append("://")

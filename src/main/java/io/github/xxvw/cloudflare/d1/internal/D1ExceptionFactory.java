@@ -7,10 +7,12 @@ import io.github.xxvw.cloudflare.d1.D1AuthorizationException;
 import io.github.xxvw.cloudflare.d1.D1BatchException;
 import io.github.xxvw.cloudflare.d1.D1Operation;
 import io.github.xxvw.cloudflare.d1.D1QueryException;
+import io.github.xxvw.cloudflare.d1.D1RawResult;
 import io.github.xxvw.cloudflare.d1.D1RateLimitException;
 import io.github.xxvw.cloudflare.d1.D1ResponseInfo;
 import io.github.xxvw.cloudflare.d1.D1Result;
 import io.github.xxvw.cloudflare.d1.internal.dto.D1ApiResponseDto;
+import io.github.xxvw.cloudflare.d1.internal.dto.D1RawApiResponseDto;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
@@ -56,11 +58,36 @@ public final class D1ExceptionFactory {
         null);
   }
 
+  public D1ApiException topLevelRawFailure(
+      int statusCode,
+      String rawBody,
+      D1Operation operation,
+      D1RawApiResponseDto apiResponse,
+      String sql) {
+    return statusException(
+        statusCode,
+        operation,
+        rawBody,
+        responseParser.topErrors(apiResponse),
+        responseParser.topMessages(apiResponse),
+        sql,
+        null);
+  }
+
   public D1QueryException queryFailure(
       int statusCode,
       String rawBody,
       D1Operation operation,
       D1Result result,
+      String sql) {
+    return new D1QueryException(operation, statusCode, rawBody, result.errors(), result.messages(), sql);
+  }
+
+  public D1QueryException rawFailure(
+      int statusCode,
+      String rawBody,
+      D1Operation operation,
+      D1RawResult result,
       String sql) {
     return new D1QueryException(operation, statusCode, rawBody, result.errors(), result.messages(), sql);
   }
@@ -81,6 +108,23 @@ public final class D1ExceptionFactory {
         failed == null ? Collections.<D1ResponseInfo>emptyList() : failed.messages(),
         failedIndex,
         results);
+  }
+
+  public D1ApiException rawBatchFailure(int statusCode, String rawBody, List<D1RawResult> results) {
+    D1RawResult failed = null;
+    for (D1RawResult result : results) {
+      if (!result.success()) {
+        failed = result;
+        break;
+      }
+    }
+    return new D1ApiException(
+        "D1 raw batch failed",
+        D1Operation.RAW_BATCH,
+        statusCode,
+        rawBody,
+        failed == null ? Collections.<D1ResponseInfo>emptyList() : failed.errors(),
+        failed == null ? Collections.<D1ResponseInfo>emptyList() : failed.messages());
   }
 
   private D1ApiException statusException(

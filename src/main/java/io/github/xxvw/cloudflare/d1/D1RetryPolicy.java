@@ -11,7 +11,8 @@ import java.util.Set;
  * Retry policy for D1 operations.
  *
  * <p>The default policy retries read-style query operations on common transient HTTP statuses.
- * Execute and batch operations do not retry by default.
+ * Raw and object-row query operations retry by default. Execute, batch, and raw batch operations
+ * do not retry by default.
  *
  * <pre>{@code
  * D1Client client = D1Client.builder()
@@ -26,6 +27,8 @@ public final class D1RetryPolicy {
   private final boolean retryQuery;
   private final boolean retryExecute;
   private final boolean retryBatch;
+  private final boolean retryRaw;
+  private final boolean retryRawBatch;
   private final int maxRetries;
   private final Duration baseDelay;
   private final Duration maxDelay;
@@ -37,6 +40,8 @@ public final class D1RetryPolicy {
     this.retryQuery = builder.retryQuery;
     this.retryExecute = builder.retryExecute;
     this.retryBatch = builder.retryBatch;
+    this.retryRaw = builder.retryRaw;
+    this.retryRawBatch = builder.retryRawBatch;
     this.maxRetries = builder.maxRetries;
     this.baseDelay = requireNonNegative(builder.baseDelay, "baseDelay");
     this.maxDelay = requireNonNegative(builder.maxDelay, "maxDelay");
@@ -70,6 +75,8 @@ public final class D1RetryPolicy {
         .retryQuery(false)
         .retryExecute(false)
         .retryBatch(false)
+        .retryRaw(false)
+        .retryRawBatch(false)
         .maxRetries(0)
         .build();
   }
@@ -108,6 +115,24 @@ public final class D1RetryPolicy {
    */
   public boolean retryBatch() {
     return retryBatch;
+  }
+
+  /**
+   * Whether raw query operations may be retried.
+   *
+   * @return true when raw query retries are enabled
+   */
+  public boolean retryRaw() {
+    return retryRaw;
+  }
+
+  /**
+   * Whether raw batch operations may be retried.
+   *
+   * @return true when raw batch retries are enabled
+   */
+  public boolean retryRawBatch() {
+    return retryRawBatch;
   }
 
   /**
@@ -178,6 +203,10 @@ public final class D1RetryPolicy {
         return retryExecute;
       case BATCH:
         return retryBatch;
+      case RAW:
+        return retryRaw;
+      case RAW_BATCH:
+        return retryRawBatch;
       default:
         return false;
     }
@@ -213,6 +242,8 @@ public final class D1RetryPolicy {
     private boolean retryQuery = true;
     private boolean retryExecute;
     private boolean retryBatch;
+    private boolean retryRaw = true;
+    private boolean retryRawBatch;
     private int maxRetries = 2;
     private Duration baseDelay = Duration.ofMillis(200);
     private Duration maxDelay = Duration.ofSeconds(2);
@@ -253,6 +284,28 @@ public final class D1RetryPolicy {
      */
     public Builder retryBatch(boolean retryBatch) {
       this.retryBatch = retryBatch;
+      return this;
+    }
+
+    /**
+     * Enables or disables raw query retries.
+     *
+     * @param retryRaw whether raw query retries are enabled
+     * @return this builder
+     */
+    public Builder retryRaw(boolean retryRaw) {
+      this.retryRaw = retryRaw;
+      return this;
+    }
+
+    /**
+     * Enables or disables raw batch retries.
+     *
+     * @param retryRawBatch whether raw batch retries are enabled
+     * @return this builder
+     */
+    public Builder retryRawBatch(boolean retryRawBatch) {
+      this.retryRawBatch = retryRawBatch;
       return this;
     }
 

@@ -78,6 +78,14 @@ public final class D1ResponseParser {
     return infoList(apiResponse == null ? null : apiResponse.messages);
   }
 
+  public List<D1ResponseInfo> topErrors(D1RawApiResponseDto apiResponse) {
+    return infoList(apiResponse == null ? null : apiResponse.errors);
+  }
+
+  public List<D1ResponseInfo> topMessages(D1RawApiResponseDto apiResponse) {
+    return infoList(apiResponse == null ? null : apiResponse.messages);
+  }
+
   private static D1QueryResultDto firstResult(D1ApiResponseDto apiResponse) {
     if (apiResponse.result == null || apiResponse.result.isEmpty()) {
       return null;
