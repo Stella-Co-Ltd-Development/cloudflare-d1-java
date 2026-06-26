@@ -64,13 +64,19 @@ Runtime dependency:
 
 ## Quick Start
 
-Set credentials with environment variables:
+Set credentials with environment variables. For local manual testing, start from the example file:
 
 ```bash
-export CLOUDFLARE_ACCOUNT_ID="your-account-id"
-export D1_DATABASE_ID="your-d1-database-id"
-export CLOUDFLARE_API_TOKEN="your-api-token"
+cp .env.example .env
+$EDITOR .env
+
+set -a
+. ./.env
+set +a
 ```
+
+The `.env` file is ignored by Git. Never commit real Cloudflare account IDs, database IDs, or API
+tokens.
 
 Use the client:
 
@@ -107,9 +113,9 @@ See [Quick Start](docs/guides/quick-start.md) for a complete copy-paste friendly
 The repository includes standalone Maven examples in `examples/quickstart`.
 
 ```bash
-export CLOUDFLARE_ACCOUNT_ID="your-account-id"
-export D1_DATABASE_ID="your-d1-database-id"
-export CLOUDFLARE_API_TOKEN="your-api-token"
+set -a
+. ./.env
+set +a
 
 mvn -f examples/quickstart/pom.xml compile exec:java
 ```

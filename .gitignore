@@ -19,3 +19,4 @@ release.properties
 # Environment
 .env
 .env.*
+!.env.example

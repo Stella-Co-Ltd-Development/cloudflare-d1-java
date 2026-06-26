@@ -22,12 +22,16 @@ implementation "io.github.xxvw:cloudflare-d1-java:0.1.4"
 
 ## Configure Credentials
 
-Set the required environment variables:
+Set the required environment variables. For local manual testing from this repository, copy the
+example file and load it into your shell:
 
 ```bash
-export CLOUDFLARE_ACCOUNT_ID="your-account-id"
-export D1_DATABASE_ID="your-d1-database-id"
-export CLOUDFLARE_API_TOKEN="your-api-token"
+cp .env.example .env
+$EDITOR .env
+
+set -a
+. ./.env
+set +a
 ```
 
 Create the API token in the Cloudflare dashboard. For write operations, use an account-scoped D1 token with Edit permission. Store tokens outside source control and never paste production values into issues or logs.
@@ -57,9 +61,9 @@ public final class Example {
 The repository includes a standalone Maven example that runs the same flow from environment variables.
 
 ```bash
-export CLOUDFLARE_ACCOUNT_ID="your-account-id"
-export D1_DATABASE_ID="your-d1-database-id"
-export CLOUDFLARE_API_TOKEN="your-api-token"
+set -a
+. ./.env
+set +a
 
 mvn -f examples/quickstart/pom.xml compile exec:java
 ```
