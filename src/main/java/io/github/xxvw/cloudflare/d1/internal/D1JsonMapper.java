@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.xxvw.cloudflare.d1.D1MappingException;
 import io.github.xxvw.cloudflare.d1.D1Query;
 import io.github.xxvw.cloudflare.d1.internal.dto.D1ApiResponseDto;
+import io.github.xxvw.cloudflare.d1.internal.dto.D1RawApiResponseDto;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -47,6 +48,10 @@ public final class D1JsonMapper {
 
   public D1ApiResponseDto readApiResponse(String rawBody) throws JsonProcessingException {
     return internalObjectMapper.readValue(rawBody, D1ApiResponseDto.class);
+  }
+
+  public D1RawApiResponseDto readRawApiResponse(String rawBody) throws JsonProcessingException {
+    return internalObjectMapper.readValue(rawBody, D1RawApiResponseDto.class);
   }
 
   public <T> List<T> mapRows(List<Map<String, Object>> rows, Class<T> type) {
