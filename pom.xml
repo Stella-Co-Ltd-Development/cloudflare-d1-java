@@ -151,6 +151,17 @@
 
   <profiles>
     <profile>
+      <id>legacy-jdk-tests</id>
+      <activation>
+        <jdk>[1.8,17)</jdk>
+      </activation>
+      <properties>
+        <!-- JUnit 6 requires Java 17 or newer; legacy JDK CI keeps a compatible test runtime. -->
+        <junit.version>5.10.5</junit.version>
+      </properties>
+    </profile>
+
+    <profile>
       <id>release</id>
       <build>
         <plugins>
