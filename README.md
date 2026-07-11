@@ -158,6 +158,8 @@ mvn -f examples/quickstart/pom.xml compile exec:java \
 | Typed row mapping | `query(..., User.class)` | Same as query |
 | Async operations | `D1AsyncClient` | Same as the underlying operation |
 
+> **Warning:** `query(...)`, `queryFirst(...)`, and `raw(...)` are retried by default and must be used for reads only. A retried operation can reach the server more than once (at-least-once semantics), so run writes through `execute(...)` or `batch(...)`, which do not retry by default.
+
 Parameters may be `String`, `Number`, `Boolean`, or `null`. Convert dates, JSON values, and custom objects to strings before passing them as SQL parameters.
 
 ## Query
@@ -253,7 +255,7 @@ See [Raw Query API](docs/guides/raw.md) for raw batch and async examples.
 
 ## Retry Policy
 
-Queries retry by default on `429`, `500`, `502`, `503`, and `504`.
+Queries retry by default on `429`, `500`, `502`, `503`, `504`, and transient network failures. Because retries have at-least-once semantics, keep write statements out of `query(...)` and `raw(...)`.
 
 Default policy:
 
@@ -268,6 +270,8 @@ baseDelay = 200ms
 maxDelay = 2s
 jitter = true
 respectRetryAfter = true
+maxRetryAfter = 30s
+retryNetworkErrors = true
 ```
 
 Custom policy:
@@ -284,6 +288,8 @@ D1RetryPolicy retryPolicy = D1RetryPolicy.builder()
     .maxDelay(Duration.ofSeconds(5))
     .jitter(true)
     .respectRetryAfter(true)
+    .maxRetryAfter(Duration.ofSeconds(30))
+    .retryNetworkErrors(true)
     .build();
 ```
 

@@ -10,9 +10,14 @@ import java.util.Set;
 /**
  * Retry policy for D1 operations.
  *
- * <p>The default policy retries read-style query operations on common transient HTTP statuses.
- * Raw and object-row query operations retry by default. Execute, batch, and raw batch operations
- * do not retry by default.
+ * <p>The default policy retries read-style query operations on common transient HTTP statuses
+ * and transient network failures. Raw and object-row query operations retry by default. Execute,
+ * batch, and raw batch operations do not retry by default.
+ *
+ * <p>Retried operations have at-least-once semantics: a statement may reach the server more than
+ * once. Keep write statements out of retried operations, and enable {@code retryExecute} or
+ * {@code retryBatch} only when the statements are safe to repeat or the application has its own
+ * idempotency guarantees.
  *
  * <pre>{@code
  * D1Client client = D1Client.builder()
@@ -289,6 +294,9 @@ public final class D1RetryPolicy {
 
     /**
      * Enables or disables query retries.
+     *
+     * <p>Enabled by default. Use {@code query} operations for reads only: a retried statement can
+     * be applied more than once by the server.
      *
      * @param retryQuery whether query retries are enabled
      * @return this builder

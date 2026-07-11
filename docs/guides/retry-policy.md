@@ -2,6 +2,8 @@
 
 `query(...)` and `raw(...)` retry transient HTTP failures by default. `execute(...)`, `batch(...)`, and `rawBatch(...)` do not retry by default because write operations and batches may not be idempotent.
 
+> **Warning:** Retried operations have at-least-once semantics — a statement may reach the server more than once. Use `query(...)`, `queryFirst(...)`, and `raw(...)` for reads only, and run writes through `execute(...)` or `batch(...)`. Nothing prevents a write statement from being passed to `query(...)`, so this is a contract the application must uphold.
+
 ## Defaults
 
 ```text
