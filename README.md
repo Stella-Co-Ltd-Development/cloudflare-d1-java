@@ -5,7 +5,7 @@
 [![Javadocs](https://javadoc.io/badge2/io.github.xxvw/cloudflare-d1-java/0.1.4/javadoc.svg)](https://javadoc.io/doc/io.github.xxvw/cloudflare-d1-java/0.1.4)
 [![License](https://img.shields.io/github/license/Stella-Co-Ltd-Development/cloudflare-d1-java.svg?cacheSeconds=3600)](LICENSE)
 
-`cloudflare-d1-java` is an unofficial Java client for the Cloudflare D1 REST API.
+`cloudflare-d1-java` is an **unofficial** Java client for the Cloudflare D1 REST API. This project is not affiliated with, endorsed by, or sponsored by Cloudflare.
 
 It is a lightweight SDK for Java applications that need direct REST API access to D1. It is not a JDBC driver, ORM, SQL builder, migration tool, Spring Boot starter, or Cloudflare Workers binding client.
 
