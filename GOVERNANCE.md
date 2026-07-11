@@ -2,6 +2,13 @@
 
 This document summarizes the repository governance rules for `cloudflare-d1-java`.
 
+Detailed policy documents live under [`docs/governance/`](docs/governance/):
+
+- [Maintainers](docs/governance/MAINTAINERS.md)
+- [Release Policy](docs/governance/RELEASE_POLICY.md)
+- [Dependency Policy](docs/governance/DEPENDENCY_POLICY.md)
+- [Branch Protection](docs/governance/BRANCH_PROTECTION.md)
+
 ## Project Identity
 
 `cloudflare-d1-java` is an unofficial Java client for the Cloudflare D1 REST API.
