@@ -139,11 +139,27 @@ public final class D1AsyncClient implements AutoCloseable {
    * Runs a parameterized query and maps every returned row to the requested type.
    *
    * @param sql SQL text to execute
+   * @param type target row type
+   * @param params positional parameter values
+   * @param <T> target row type
+   * @return future completed with immutable mapped rows
+   */
+  public <T> CompletableFuture<List<T>> queryAsync(String sql, Class<T> type, List<?> params) {
+    return queryAsync(D1Query.of(sql, params), type);
+  }
+
+  /**
+   * Runs a parameterized query and maps every returned row to the requested type.
+   *
+   * @param sql SQL text to execute
    * @param params positional parameter values
    * @param type target row type
    * @param <T> target row type
    * @return future completed with immutable mapped rows
+   * @deprecated Use {@link #queryAsync(String, Class, List)}, which matches the varargs parameter
+   *     order; scheduled for removal in 0.3.0.
    */
+  @Deprecated
   public <T> CompletableFuture<List<T>> queryAsync(String sql, List<?> params, Class<T> type) {
     return queryAsync(D1Query.of(sql, params), type);
   }
@@ -231,11 +247,27 @@ public final class D1AsyncClient implements AutoCloseable {
    * Runs a parameterized query and maps the first returned row to the requested type.
    *
    * @param sql SQL text to execute
+   * @param type target row type
+   * @param params positional parameter values
+   * @param <T> target row type
+   * @return future completed with the mapped first row or empty
+   */
+  public <T> CompletableFuture<Optional<T>> queryFirstAsync(String sql, Class<T> type, List<?> params) {
+    return queryFirstAsync(D1Query.of(sql, params), type);
+  }
+
+  /**
+   * Runs a parameterized query and maps the first returned row to the requested type.
+   *
+   * @param sql SQL text to execute
    * @param params positional parameter values
    * @param type target row type
    * @param <T> target row type
    * @return future completed with the mapped first row or empty
+   * @deprecated Use {@link #queryFirstAsync(String, Class, List)}, which matches the varargs
+   *     parameter order; scheduled for removal in 0.3.0.
    */
+  @Deprecated
   public <T> CompletableFuture<Optional<T>> queryFirstAsync(String sql, List<?> params, Class<T> type) {
     return queryFirstAsync(D1Query.of(sql, params), type);
   }
