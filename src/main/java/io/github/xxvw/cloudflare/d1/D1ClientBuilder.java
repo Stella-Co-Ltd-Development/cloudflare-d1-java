@@ -177,7 +177,8 @@ public final class D1ClientBuilder {
         d1HttpClient,
         jsonMapper,
         new io.github.xxvw.cloudflare.d1.internal.D1ResponseParser(jsonMapper),
-        new D1RetryExecutor(retryPolicy));
+        new D1RetryExecutor(retryPolicy),
+        selectedTransport);
   }
 
   private static String requireText(String value, String name) {

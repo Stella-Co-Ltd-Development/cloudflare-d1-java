@@ -7,6 +7,10 @@ import java.io.IOException;
  *
  * <p>Implement this interface to customize request execution without depending on a specific HTTP
  * client library.
+ *
+ * <p>A client owns its transport and calls {@link #close()} exactly once when the client closes.
+ * When one transport instance is shared across multiple clients, manage its lifecycle externally
+ * and keep {@code close()} a no-op.
  */
 @FunctionalInterface
 public interface D1Transport {
@@ -18,4 +22,11 @@ public interface D1Transport {
    * @throws IOException when request execution fails
    */
   D1TransportResponse send(D1TransportRequest request) throws IOException;
+
+  /**
+   * Releases resources held by this transport.
+   *
+   * <p>Called once when the owning client closes. The default implementation does nothing.
+   */
+  default void close() {}
 }

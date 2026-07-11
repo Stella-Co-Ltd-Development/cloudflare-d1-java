@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 
 /**
@@ -50,18 +51,21 @@ public final class D1Client implements AutoCloseable {
   private final D1ResponseParser responseParser;
   private final D1RetryExecutor retryExecutor;
   private final D1ExceptionFactory exceptionFactory;
-  private volatile boolean closed;
+  private final D1Transport transport;
+  private final AtomicBoolean closed = new AtomicBoolean();
 
   D1Client(
       D1HttpClient httpClient,
       D1JsonMapper jsonMapper,
       D1ResponseParser responseParser,
-      D1RetryExecutor retryExecutor) {
+      D1RetryExecutor retryExecutor,
+      D1Transport transport) {
     this.httpClient = httpClient;
     this.jsonMapper = jsonMapper;
     this.responseParser = responseParser;
     this.retryExecutor = retryExecutor;
     this.exceptionFactory = new D1ExceptionFactory(jsonMapper, responseParser);
+    this.transport = transport;
   }
 
   /**
@@ -438,11 +442,16 @@ public final class D1Client implements AutoCloseable {
   }
 
   /**
-   * Marks this client as closed and prevents further requests.
+   * Closes this client, prevents further requests, and closes the owned transport.
+   *
+   * <p>The transport {@link D1Transport#close()} hook is invoked exactly once even when this
+   * method is called multiple times.
    */
   @Override
   public void close() {
-    closed = true;
+    if (closed.compareAndSet(false, true)) {
+      transport.close();
+    }
   }
 
   private D1Result executeSingle(D1Query query, D1Operation operation) {
@@ -510,7 +519,7 @@ public final class D1Client implements AutoCloseable {
   }
 
   private void ensureOpen() {
-    if (closed) {
+    if (closed.get()) {
       throw new IllegalStateException("D1Client is closed");
     }
   }
