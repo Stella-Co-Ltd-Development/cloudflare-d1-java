@@ -23,6 +23,7 @@ This project follows Semantic Versioning.
 
 ### Fixed
 
+- The default transport no longer disconnects the connection after every request, allowing HTTP keep-alive reuse; connections are torn down only on failure paths.
 - Fixed exponential retry backoff overflowing for large retry attempt counts; delays are now always clamped at the configured maximum delay.
 - Preserved sub-millisecond backoff delays instead of truncating them to zero during jitter calculation and sleeping.
 
