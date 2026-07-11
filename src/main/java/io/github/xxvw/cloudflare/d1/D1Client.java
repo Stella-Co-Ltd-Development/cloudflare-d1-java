@@ -169,11 +169,27 @@ public final class D1Client implements AutoCloseable {
    * Runs a parameterized query and maps every returned row to the requested type.
    *
    * @param sql SQL text to execute
+   * @param type target row type
+   * @param params positional parameter values
+   * @param <T> target row type
+   * @return immutable list of mapped rows
+   */
+  public <T> List<T> query(String sql, Class<T> type, List<?> params) {
+    return query(D1Query.of(sql, params), type);
+  }
+
+  /**
+   * Runs a parameterized query and maps every returned row to the requested type.
+   *
+   * @param sql SQL text to execute
    * @param params positional parameter values
    * @param type target row type
    * @param <T> target row type
    * @return immutable list of mapped rows
+   * @deprecated Use {@link #query(String, Class, List)}, which matches the varargs parameter
+   *     order; scheduled for removal in 0.3.0.
    */
+  @Deprecated
   public <T> List<T> query(String sql, List<?> params, Class<T> type) {
     return query(D1Query.of(sql, params), type);
   }
@@ -262,11 +278,27 @@ public final class D1Client implements AutoCloseable {
    * Runs a parameterized query and maps the first returned row to the requested type.
    *
    * @param sql SQL text to execute
+   * @param type target row type
+   * @param params positional parameter values
+   * @param <T> target row type
+   * @return mapped first row or empty when no rows are returned
+   */
+  public <T> Optional<T> queryFirst(String sql, Class<T> type, List<?> params) {
+    return queryFirst(D1Query.of(sql, params), type);
+  }
+
+  /**
+   * Runs a parameterized query and maps the first returned row to the requested type.
+   *
+   * @param sql SQL text to execute
    * @param params positional parameter values
    * @param type target row type
    * @param <T> target row type
    * @return mapped first row or empty when no rows are returned
+   * @deprecated Use {@link #queryFirst(String, Class, List)}, which matches the varargs parameter
+   *     order; scheduled for removal in 0.3.0.
    */
+  @Deprecated
   public <T> Optional<T> queryFirst(String sql, List<?> params, Class<T> type) {
     return queryFirst(D1Query.of(sql, params), type);
   }

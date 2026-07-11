@@ -10,6 +10,10 @@ This project follows Semantic Versioning.
 
 - Removed the deprecated preview async methods `D1Client.queryAsync`, `D1Client.executeAsync`, and `D1Client.batchAsync`. Use `D1AsyncClient` instead.
 
+### Deprecated
+
+- Deprecated `query(String, List, Class)`, `queryFirst(String, List, Class)`, and the matching async overloads in favor of new `(sql, type, params)` overloads that match the varargs parameter order; removal is planned for 0.3.0.
+
 ### Changed
 
 - The default async executor changed from `ForkJoinPool.commonPool()` to a client-owned pool with named daemon threads; `D1AsyncClient.close()` shuts it down, while caller-supplied executors are never shut down.

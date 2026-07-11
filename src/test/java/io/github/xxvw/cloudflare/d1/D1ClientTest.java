@@ -276,6 +276,29 @@ class D1ClientTest {
   }
 
   @Test
+  void typedOverloadsResolveConsistentlyAcrossVarargsListAndDeprecatedOrder() throws Exception {
+    server.enqueue(ok(selectBody("[{\"id\":1,\"name\":\"Taro\"}]", metaBody())));
+    server.enqueue(ok(selectBody("[{\"id\":2,\"name\":\"Jiro\"}]", metaBody())));
+    server.enqueue(ok(selectBody("[{\"id\":3,\"name\":\"Saburo\"}]", metaBody())));
+    server.enqueue(ok(selectBody("[{\"id\":4,\"name\":\"Shiro\"}]", metaBody())));
+    D1Client client = testClient();
+
+    List<UserRow> varargsRows = client.query("SELECT 1", UserRow.class, 1);
+    List<UserRow> listRows = client.query("SELECT 1", UserRow.class, Collections.singletonList(1));
+    @SuppressWarnings("deprecation")
+    List<UserRow> deprecatedOrderRows = client.query("SELECT 1", Collections.singletonList(1), UserRow.class);
+    java.util.Optional<UserRow> first = client.queryFirst("SELECT 1", UserRow.class, Collections.singletonList(1));
+
+    assertThat(varargsRows).containsExactly(new UserRow(1, "Taro"));
+    assertThat(listRows).containsExactly(new UserRow(2, "Jiro"));
+    assertThat(deprecatedOrderRows).containsExactly(new UserRow(3, "Saburo"));
+    assertThat(first).contains(new UserRow(4, "Shiro"));
+    for (int i = 0; i < 4; i++) {
+      assertThat(server.takeRequest().getBody().utf8()).isEqualTo("{\"sql\":\"SELECT 1\",\"params\":[1]}");
+    }
+  }
+
+  @Test
   void queryFirstReturnsEmptyOrFirstRowAndTypedFirstRow() {
     server.enqueue(ok(selectBody("[]", metaBody())));
     server.enqueue(ok(selectBody("[{\"id\":1,\"name\":\"Taro\"},{\"id\":2,\"name\":\"Jiro\"}]", metaBody())));

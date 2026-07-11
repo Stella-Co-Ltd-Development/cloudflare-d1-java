@@ -111,6 +111,23 @@ class D1AsyncClientTest {
   }
 
   @Test
+  void typedListOverloadsUseTheVarargsParameterOrder() throws Exception {
+    server.enqueue(ok(selectBody("[{\"id\":5,\"name\":\"Goro\"}]", metaBody())));
+    server.enqueue(ok(selectBody("[{\"id\":6,\"name\":\"Roku\"}]", metaBody())));
+    D1AsyncClient client = testClient();
+
+    List<UserRow> rows =
+        client.queryAsync("SELECT 1", UserRow.class, Collections.singletonList(5)).get(1, TimeUnit.SECONDS);
+    Optional<UserRow> first =
+        client.queryFirstAsync("SELECT 1", UserRow.class, Collections.singletonList(6)).get(1, TimeUnit.SECONDS);
+
+    assertThat(rows).containsExactly(new UserRow(5, "Goro"));
+    assertThat(first).contains(new UserRow(6, "Roku"));
+    assertThat(server.takeRequest().getBody().utf8()).isEqualTo("{\"sql\":\"SELECT 1\",\"params\":[5]}");
+    assertThat(server.takeRequest().getBody().utf8()).isEqualTo("{\"sql\":\"SELECT 1\",\"params\":[6]}");
+  }
+
+  @Test
   void executeAndBatchAsyncReturnResults() throws Exception {
     server.enqueue(ok(selectBody("[]",
         "{\"changed_db\":true,\"changes\":1,\"last_row_id\":42,\"rows_read\":0,\"rows_written\":1,\"duration\":2.5}")));
