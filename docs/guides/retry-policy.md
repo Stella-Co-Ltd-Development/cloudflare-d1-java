@@ -15,6 +15,7 @@ baseDelay = 200ms
 maxDelay = 2s
 jitter = true
 respectRetryAfter = true
+maxRetryAfter = 30s
 retryStatusCodes = 429, 500, 502, 503, 504
 ```
 
@@ -43,6 +44,7 @@ D1RetryPolicy retryPolicy = D1RetryPolicy.builder()
     .maxDelay(Duration.ofSeconds(5))
     .jitter(true)
     .respectRetryAfter(true)
+    .maxRetryAfter(Duration.ofSeconds(30))
     .build();
 ```
 
@@ -50,4 +52,4 @@ Enable retries for writes only when the statement is safe to repeat or the appli
 
 ## Rate Limits
 
-When D1 returns `429`, `D1RateLimitException.retryAfter()` exposes the parsed `Retry-After` header when present. The retry executor also respects that header when the retry policy allows it.
+When D1 returns `429`, `D1RateLimitException.retryAfter()` exposes the parsed `Retry-After` header when present. The retry executor also respects that header when the retry policy allows it, but never sleeps longer than `maxRetryAfter` even when the server requests a longer delay.

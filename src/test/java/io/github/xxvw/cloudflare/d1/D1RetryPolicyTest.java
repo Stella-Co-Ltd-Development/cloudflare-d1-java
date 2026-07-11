@@ -25,7 +25,17 @@ class D1RetryPolicyTest {
     assertThat(policy.maxDelay()).isEqualTo(Duration.ofSeconds(2));
     assertThat(policy.jitter()).isTrue();
     assertThat(policy.respectRetryAfter()).isTrue();
+    assertThat(policy.maxRetryAfter()).isEqualTo(Duration.ofSeconds(30));
     assertThat(policy.retryStatusCodes()).containsExactlyInAnyOrder(429, 500, 502, 503, 504);
+  }
+
+  @Test
+  void maxRetryAfterIsConfigurable() {
+    D1RetryPolicy policy = D1RetryPolicy.builder()
+        .maxRetryAfter(Duration.ofSeconds(5))
+        .build();
+
+    assertThat(policy.maxRetryAfter()).isEqualTo(Duration.ofSeconds(5));
   }
 
   @Test
@@ -66,6 +76,10 @@ class D1RetryPolicyTest {
         .baseDelay(Duration.ofSeconds(2))
         .maxDelay(Duration.ofSeconds(1))
         .build()).isInstanceOf(IllegalArgumentException.class);
+    assertThatThrownBy(() -> D1RetryPolicy.builder().maxRetryAfter(null).build())
+        .isInstanceOf(NullPointerException.class);
+    assertThatThrownBy(() -> D1RetryPolicy.builder().maxRetryAfter(Duration.ofSeconds(-1)).build())
+        .isInstanceOf(IllegalArgumentException.class);
     assertThatThrownBy(() -> D1RetryPolicy.builder().retryStatusCodes(null).build())
         .isInstanceOf(NullPointerException.class);
     assertThatThrownBy(() -> D1RetryPolicy.builder().retryStatusCodes(Collections.emptySet()).build())

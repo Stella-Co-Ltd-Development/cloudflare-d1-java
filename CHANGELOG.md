@@ -6,6 +6,10 @@ This project follows Semantic Versioning.
 
 ## [Unreleased]
 
+### Changed
+
+- Server-provided Retry-After delays are now capped by the new `maxRetryAfter` retry policy setting (default 30 seconds); `D1RateLimitException.retryAfter()` still exposes the raw server value.
+
 ### Fixed
 
 - Fixed exponential retry backoff overflowing for large retry attempt counts; delays are now always clamped at the configured maximum delay.

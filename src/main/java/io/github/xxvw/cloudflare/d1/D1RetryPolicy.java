@@ -34,6 +34,7 @@ public final class D1RetryPolicy {
   private final Duration maxDelay;
   private final boolean jitter;
   private final boolean respectRetryAfter;
+  private final Duration maxRetryAfter;
   private final Set<Integer> retryStatusCodes;
 
   private D1RetryPolicy(Builder builder) {
@@ -50,6 +51,7 @@ public final class D1RetryPolicy {
     }
     this.jitter = builder.jitter;
     this.respectRetryAfter = builder.respectRetryAfter;
+    this.maxRetryAfter = requireNonNegative(builder.maxRetryAfter, "maxRetryAfter");
     if (maxRetries < 0) {
       throw new IllegalArgumentException("maxRetries must be greater than or equal to 0");
     }
@@ -181,6 +183,19 @@ public final class D1RetryPolicy {
   }
 
   /**
+   * Absolute upper bound applied to server-provided Retry-After delays.
+   *
+   * <p>Server values above this bound are capped so a misbehaving server cannot block the calling
+   * thread arbitrarily long. This bound is independent of {@link #maxDelay()}, which only applies
+   * to calculated backoff delays.
+   *
+   * @return maximum Retry-After delay
+   */
+  public Duration maxRetryAfter() {
+    return maxRetryAfter;
+  }
+
+  /**
    * HTTP status codes eligible for retry.
    *
    * @return immutable status code set
@@ -249,6 +264,7 @@ public final class D1RetryPolicy {
     private Duration maxDelay = Duration.ofSeconds(2);
     private boolean jitter = true;
     private boolean respectRetryAfter = true;
+    private Duration maxRetryAfter = Duration.ofSeconds(30);
     private Set<Integer> retryStatusCodes =
         new LinkedHashSet<>(Arrays.asList(429, 500, 502, 503, 504));
 
@@ -361,6 +377,17 @@ public final class D1RetryPolicy {
      */
     public Builder respectRetryAfter(boolean respectRetryAfter) {
       this.respectRetryAfter = respectRetryAfter;
+      return this;
+    }
+
+    /**
+     * Sets the absolute upper bound applied to server-provided Retry-After delays.
+     *
+     * @param maxRetryAfter non-negative maximum Retry-After delay
+     * @return this builder
+     */
+    public Builder maxRetryAfter(Duration maxRetryAfter) {
+      this.maxRetryAfter = maxRetryAfter;
       return this;
     }
 
