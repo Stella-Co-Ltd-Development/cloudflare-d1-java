@@ -6,6 +6,10 @@ This project follows Semantic Versioning.
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-07-11
+
+See the [migration guide](docs/guides/migration-0.2.md) for upgrade steps from 0.1.x.
+
 ### Removed
 
 - Removed the deprecated preview async methods `D1Client.queryAsync`, `D1Client.executeAsync`, and `D1Client.batchAsync`. Use `D1AsyncClient` instead.
@@ -26,6 +30,11 @@ This project follows Semantic Versioning.
 - The default transport no longer disconnects the connection after every request, allowing HTTP keep-alive reuse; connections are torn down only on failure paths.
 - Fixed exponential retry backoff overflowing for large retry attempt counts; delays are now always clamped at the configured maximum delay.
 - Preserved sub-millisecond backoff delays instead of truncating them to zero during jitter calculation and sleeping.
+
+### Documentation
+
+- Documented that retried query operations have at-least-once semantics and must be used for reads only.
+- Consolidated detailed governance documents under `docs/governance/` and stated the unofficial status more prominently.
 
 ## [0.1.4] - 2026-06-26
 
