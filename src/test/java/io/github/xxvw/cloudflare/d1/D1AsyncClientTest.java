@@ -1,8 +1,15 @@
 package io.github.xxvw.cloudflare.d1;
 
+import static io.github.xxvw.cloudflare.d1.testsupport.TestResponses.jsonError;
+import static io.github.xxvw.cloudflare.d1.testsupport.TestResponses.metaBody;
+import static io.github.xxvw.cloudflare.d1.testsupport.TestResponses.ok;
+import static io.github.xxvw.cloudflare.d1.testsupport.TestResponses.rawBody;
+import static io.github.xxvw.cloudflare.d1.testsupport.TestResponses.selectBody;
+import static io.github.xxvw.cloudflare.d1.testsupport.TestRows.row;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.github.xxvw.cloudflare.d1.testsupport.UserRow;
 import java.net.SocketTimeoutException;
 import java.time.Duration;
 import java.util.Arrays;
@@ -16,7 +23,6 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import mockwebserver3.MockResponse;
 import mockwebserver3.MockWebServer;
 import mockwebserver3.RecordedRequest;
 import org.junit.jupiter.api.AfterEach;
@@ -213,65 +219,4 @@ class D1AsyncClientTest {
         .build();
   }
 
-  private static MockResponse ok(String body) {
-    return new MockResponse.Builder().code(200).body(body).build();
-  }
-
-  private static MockResponse jsonError(int statusCode) {
-    return new MockResponse.Builder()
-        .code(statusCode)
-        .body("{\"success\":false,\"errors\":[{\"code\":" + statusCode + ",\"message\":\"error\"}],\"messages\":[]}")
-        .build();
-  }
-
-  private static String selectBody(String rows, String meta) {
-    return "{\"success\":true,\"result\":[{\"success\":true,\"results\":" + rows + ",\"meta\":" + meta
-        + "}],\"errors\":[],\"messages\":[]}";
-  }
-
-  private static String rawBody(String columns, String rows, String meta) {
-    return "{\"success\":true,\"result\":[{\"success\":true,\"results\":{\"columns\":" + columns
-        + ",\"rows\":" + rows + "},\"meta\":" + meta + "}],\"errors\":[],\"messages\":[]}";
-  }
-
-  private static String metaBody() {
-    return "{\"changed_db\":false,\"changes\":0,\"rows_read\":1,\"rows_written\":0,\"duration\":1.0}";
-  }
-
-  private static Map<String, Object> row(Object... values) {
-    Map<String, Object> row = new LinkedHashMap<>();
-    for (int i = 0; i < values.length; i += 2) {
-      row.put((String) values[i], values[i + 1]);
-    }
-    return row;
-  }
-
-  public static final class UserRow {
-    public long id;
-    public String name;
-
-    public UserRow() {}
-
-    UserRow(long id, String name) {
-      this.id = id;
-      this.name = name;
-    }
-
-    @Override
-    public boolean equals(Object other) {
-      if (this == other) {
-        return true;
-      }
-      if (!(other instanceof UserRow)) {
-        return false;
-      }
-      UserRow userRow = (UserRow) other;
-      return id == userRow.id && java.util.Objects.equals(name, userRow.name);
-    }
-
-    @Override
-    public int hashCode() {
-      return java.util.Objects.hash(id, name);
-    }
-  }
 }

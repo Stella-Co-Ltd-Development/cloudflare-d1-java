@@ -1,13 +1,11 @@
 package io.github.xxvw.cloudflare.d1;
 
+import static io.github.xxvw.cloudflare.d1.testsupport.TestRows.row;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.github.xxvw.cloudflare.d1.testsupport.UserRow;
 import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 import org.junit.jupiter.api.Test;
 
 class D1ExceptionTest {
@@ -48,33 +46,4 @@ class D1ExceptionTest {
     assertThatThrownBy(() -> exception.row().put("id", 1)).isInstanceOf(UnsupportedOperationException.class);
   }
 
-  private static Map<String, Object> row(String name, Object value) {
-    Map<String, Object> row = new LinkedHashMap<>();
-    row.put(name, value);
-    return row;
-  }
-
-  public static final class UserRow {
-    public long id;
-    public String name;
-
-    public UserRow() {}
-
-    @Override
-    public boolean equals(Object other) {
-      if (this == other) {
-        return true;
-      }
-      if (!(other instanceof UserRow)) {
-        return false;
-      }
-      UserRow that = (UserRow) other;
-      return id == that.id && Objects.equals(name, that.name);
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(id, name);
-    }
-  }
 }
