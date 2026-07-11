@@ -16,6 +16,7 @@ maxDelay = 2s
 jitter = true
 respectRetryAfter = true
 maxRetryAfter = 30s
+retryNetworkErrors = true
 retryStatusCodes = 429, 500, 502, 503, 504
 ```
 
@@ -45,10 +46,15 @@ D1RetryPolicy retryPolicy = D1RetryPolicy.builder()
     .jitter(true)
     .respectRetryAfter(true)
     .maxRetryAfter(Duration.ofSeconds(30))
+    .retryNetworkErrors(true)
     .build();
 ```
 
 Enable retries for writes only when the statement is safe to repeat or the application has its own idempotency guarantees.
+
+## Network Failures
+
+Transient network failures (connection failures and timeouts) are retried with exponential backoff for operations whose retries are enabled, mirroring the handling of retryable HTTP statuses. Because a request may have reached the server before the connection failed, retried operations have at-least-once semantics. Disable this behavior with `retryNetworkErrors(false)`.
 
 ## Rate Limits
 

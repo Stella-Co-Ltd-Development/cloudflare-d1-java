@@ -26,7 +26,17 @@ class D1RetryPolicyTest {
     assertThat(policy.jitter()).isTrue();
     assertThat(policy.respectRetryAfter()).isTrue();
     assertThat(policy.maxRetryAfter()).isEqualTo(Duration.ofSeconds(30));
+    assertThat(policy.retryNetworkErrors()).isTrue();
     assertThat(policy.retryStatusCodes()).containsExactlyInAnyOrder(429, 500, 502, 503, 504);
+  }
+
+  @Test
+  void networkErrorRetriesCanBeDisabled() {
+    D1RetryPolicy policy = D1RetryPolicy.builder()
+        .retryNetworkErrors(false)
+        .build();
+
+    assertThat(policy.retryNetworkErrors()).isFalse();
   }
 
   @Test

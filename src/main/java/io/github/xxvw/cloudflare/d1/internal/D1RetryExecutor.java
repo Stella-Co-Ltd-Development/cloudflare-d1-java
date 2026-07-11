@@ -29,13 +29,30 @@ public final class D1RetryExecutor {
   public D1HttpResponse execute(D1Operation operation, ThrowingSupplier<D1HttpResponse> supplier) {
     int attempts = 0;
     while (true) {
-      D1HttpResponse response = supplier.get();
+      D1HttpResponse response;
+      try {
+        response = supplier.get();
+      } catch (D1TimeoutException | D1TransportException e) {
+        attempts = retryNetworkFailureOrRethrow(operation, attempts, e);
+        continue;
+      }
       if (!shouldRetry(operation, response.statusCode(), attempts)) {
         return response;
       }
       attempts++;
       sleep(operation, delayForAttempt(attempts, response));
     }
+  }
+
+  private int retryNetworkFailureOrRethrow(D1Operation operation, int attempts, RuntimeException failure) {
+    if (!retryPolicy.retries(operation)
+        || !retryPolicy.retryNetworkErrors()
+        || attempts >= retryPolicy.maxRetries()) {
+      throw failure;
+    }
+    int nextAttempt = attempts + 1;
+    sleep(operation, backoffDelay(nextAttempt));
+    return nextAttempt;
   }
 
   private boolean shouldRetry(D1Operation operation, int statusCode, int attempts) {
@@ -53,6 +70,10 @@ public final class D1RetryExecutor {
         return delay.compareTo(maxRetryAfter) > 0 ? maxRetryAfter : delay;
       }
     }
+    return backoffDelay(retryAttempt);
+  }
+
+  private Duration backoffDelay(int retryAttempt) {
     Duration calculatedDelay = exponentialDelay(retryAttempt);
     if (!retryPolicy.jitter() || calculatedDelay.isZero()) {
       return calculatedDelay;
