@@ -9,12 +9,15 @@ import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
 
 public final class D1RetryExecutor {
+  private static final int MAX_BACKOFF_EXPONENT = 62;
+  private static final Duration MAX_NANOS_DELAY = Duration.ofNanos(Long.MAX_VALUE);
+
   private final D1RetryPolicy retryPolicy;
   private final D1RetryAfterParser retryAfterParser;
   private final D1Sleeper sleeper;
 
   public D1RetryExecutor(D1RetryPolicy retryPolicy) {
-    this(retryPolicy, new D1RetryAfterParser(), duration -> Thread.sleep(duration.toMillis()));
+    this(retryPolicy, new D1RetryAfterParser(), D1RetryExecutor::sleepFor);
   }
 
   D1RetryExecutor(D1RetryPolicy retryPolicy, D1RetryAfterParser retryAfterParser, D1Sleeper sleeper) {
@@ -48,15 +51,34 @@ public final class D1RetryExecutor {
         return retryAfter.get();
       }
     }
-    Duration calculatedDelay = retryPolicy.baseDelay().multipliedBy(1L << Math.max(0, retryAttempt - 1));
-    if (calculatedDelay.compareTo(retryPolicy.maxDelay()) > 0) {
-      calculatedDelay = retryPolicy.maxDelay();
-    }
+    Duration calculatedDelay = exponentialDelay(retryAttempt);
     if (!retryPolicy.jitter() || calculatedDelay.isZero()) {
       return calculatedDelay;
     }
-    long millis = calculatedDelay.toMillis();
-    return Duration.ofMillis(ThreadLocalRandom.current().nextLong(millis + 1));
+    return Duration.ofNanos(ThreadLocalRandom.current().nextLong(jitterBoundNanos(calculatedDelay)));
+  }
+
+  private Duration exponentialDelay(int retryAttempt) {
+    Duration baseDelay = retryPolicy.baseDelay();
+    Duration maxDelay = retryPolicy.maxDelay();
+    int exponent = Math.min(Math.max(0, retryAttempt - 1), MAX_BACKOFF_EXPONENT);
+    long multiplier = 1L << exponent;
+    // Clamp by comparison before multiplying so large attempt counts cannot overflow Duration.
+    if (baseDelay.compareTo(maxDelay.dividedBy(multiplier)) > 0) {
+      return maxDelay;
+    }
+    return baseDelay.multipliedBy(multiplier);
+  }
+
+  private static long jitterBoundNanos(Duration delay) {
+    if (delay.compareTo(MAX_NANOS_DELAY) >= 0) {
+      return Long.MAX_VALUE;
+    }
+    return delay.toNanos() + 1;
+  }
+
+  private static void sleepFor(Duration duration) throws InterruptedException {
+    Thread.sleep(duration.toMillis(), (int) (duration.getNano() % 1_000_000));
   }
 
   private Optional<Duration> parseRetryAfter(String value) {
