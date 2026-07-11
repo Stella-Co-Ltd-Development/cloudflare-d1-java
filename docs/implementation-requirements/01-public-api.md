@@ -171,19 +171,8 @@ Rules:
 - Result list must be immutable.
 - If any batch item fails, throw `D1BatchException`.
 
-## Preview Async API
+## Async API
 
-Async APIs are available in v0.1.0 but are preview APIs and must be annotated as deprecated.
-
-```java
-@Deprecated(since = "0.1.0", forRemoval = false)
-public CompletableFuture<D1Result> queryAsync(String sql, Object... params);
-
-@Deprecated(since = "0.1.0", forRemoval = false)
-public CompletableFuture<D1Result> executeAsync(String sql, Object... params);
-
-@Deprecated(since = "0.1.0", forRemoval = false)
-public CompletableFuture<List<D1Result>> batchAsync(List<D1Query> queries);
-```
+The deprecated preview async methods on `D1Client` (`queryAsync`, `executeAsync`, `batchAsync`) were removed in v0.2.0. `D1AsyncClient` is the supported asynchronous entry point.
 
 Async failures must complete the future exceptionally.
