@@ -538,12 +538,11 @@ class D1ClientTest {
   }
 
   @Test
-  void closePreventsFurtherRequestsAndAsyncFailuresCompleteExceptionally() {
+  void closePreventsFurtherRequests() {
     D1Client client = testClient();
     client.close();
 
     assertThatThrownBy(() -> client.query("SELECT 1")).isInstanceOf(IllegalStateException.class);
-    assertThat(client.queryAsync("SELECT 1")).failsWithin(Duration.ofSeconds(1));
   }
 
   private D1Client testClient() {

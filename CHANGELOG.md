@@ -6,6 +6,10 @@ This project follows Semantic Versioning.
 
 ## [Unreleased]
 
+### Removed
+
+- Removed the deprecated preview async methods `D1Client.queryAsync`, `D1Client.executeAsync`, and `D1Client.batchAsync`. Use `D1AsyncClient` instead.
+
 ### Changed
 
 - Transient network failures (transport and timeout errors) are now retried with exponential backoff for operations whose retries are enabled; opt out with the new `retryNetworkErrors(false)` retry policy setting.

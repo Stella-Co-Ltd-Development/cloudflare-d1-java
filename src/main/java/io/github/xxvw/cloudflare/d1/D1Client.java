@@ -16,7 +16,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
 /**
@@ -436,47 +435,6 @@ public final class D1Client implements AutoCloseable {
   public List<D1RawResult> rawBatch(D1Query... queries) {
     Objects.requireNonNull(queries, "queries must not be null");
     return rawBatch(Arrays.asList(queries));
-  }
-
-  /**
-   * Deprecated preview asynchronous query API.
-   *
-   * <p>Use {@link D1AsyncClient#queryAsync(String, Object...)} for supported async operations.
-   *
-   * @param sql SQL text to execute
-   * @param params positional parameter values
-   * @return future completed with the parsed D1 result
-   */
-  @Deprecated
-  public CompletableFuture<D1Result> queryAsync(String sql, Object... params) {
-    return CompletableFuture.supplyAsync(() -> query(sql, params));
-  }
-
-  /**
-   * Deprecated preview asynchronous execute API.
-   *
-   * <p>Use {@link D1AsyncClient#executeAsync(String, Object...)} for supported async operations.
-   *
-   * @param sql SQL text to execute
-   * @param params positional parameter values
-   * @return future completed with the parsed D1 result
-   */
-  @Deprecated
-  public CompletableFuture<D1Result> executeAsync(String sql, Object... params) {
-    return CompletableFuture.supplyAsync(() -> execute(sql, params));
-  }
-
-  /**
-   * Deprecated preview asynchronous batch API.
-   *
-   * <p>Use {@link D1AsyncClient#batchAsync(List)} for supported async operations.
-   *
-   * @param queries non-empty query list
-   * @return future completed with immutable result items
-   */
-  @Deprecated
-  public CompletableFuture<List<D1Result>> batchAsync(List<D1Query> queries) {
-    return CompletableFuture.supplyAsync(() -> batch(queries));
   }
 
   /**
