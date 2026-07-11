@@ -12,6 +12,7 @@ This project follows Semantic Versioning.
 
 ### Changed
 
+- The default async executor changed from `ForkJoinPool.commonPool()` to a client-owned pool with named daemon threads; `D1AsyncClient.close()` shuts it down, while caller-supplied executors are never shut down.
 - `D1Client.close()` now invokes the new `D1Transport.close()` lifecycle hook exactly once, so custom transports can release pooled connections and other resources; the default hook is a no-op and lambda transports keep working unchanged.
 - Transient network failures (transport and timeout errors) are now retried with exponential backoff for operations whose retries are enabled; opt out with the new `retryNetworkErrors(false)` retry policy setting.
 - Server-provided Retry-After delays are now capped by the new `maxRetryAfter` retry policy setting (default 30 seconds); `D1RateLimitException.retryAfter()` still exposes the raw server value.

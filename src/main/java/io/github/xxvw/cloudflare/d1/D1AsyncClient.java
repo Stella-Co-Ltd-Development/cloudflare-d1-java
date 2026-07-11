@@ -5,6 +5,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -27,10 +29,16 @@ import java.util.function.Supplier;
 public final class D1AsyncClient implements AutoCloseable {
   private final D1Client delegate;
   private final Executor executor;
+  private final ExecutorService ownedExecutor;
 
   D1AsyncClient(D1Client delegate, Executor executor) {
+    this(delegate, executor, null);
+  }
+
+  D1AsyncClient(D1Client delegate, Executor executor, ExecutorService ownedExecutor) {
     this.delegate = delegate;
     this.executor = executor;
+    this.ownedExecutor = ownedExecutor;
   }
 
   /**
@@ -56,7 +64,8 @@ public final class D1AsyncClient implements AutoCloseable {
   }
 
   static D1AsyncClient fromEnv(Function<String, String> env) {
-    return new D1AsyncClient(D1Client.fromEnv(env), D1AsyncClientBuilder.defaultExecutor());
+    ExecutorService owned = D1AsyncClientBuilder.newOwnedExecutor();
+    return new D1AsyncClient(D1Client.fromEnv(env), owned, owned);
   }
 
   /**
@@ -368,14 +377,27 @@ public final class D1AsyncClient implements AutoCloseable {
   }
 
   /**
-   * Marks this client as closed and prevents further requests.
+   * Closes this client and prevents further requests.
+   *
+   * <p>When the client owns its executor (no executor was supplied to the builder), the owned
+   * executor is shut down; already-submitted operations are allowed to complete. Caller-supplied
+   * executors are never shut down.
    */
   @Override
   public void close() {
     delegate.close();
+    if (ownedExecutor != null) {
+      ownedExecutor.shutdown();
+    }
   }
 
   private <T> CompletableFuture<T> supply(Supplier<T> supplier) {
-    return CompletableFuture.supplyAsync(supplier, executor);
+    try {
+      return CompletableFuture.supplyAsync(supplier, executor);
+    } catch (RejectedExecutionException e) {
+      CompletableFuture<T> failed = new CompletableFuture<>();
+      failed.completeExceptionally(e);
+      return failed;
+    }
   }
 }

@@ -21,8 +21,12 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import mockwebserver3.MockWebServer;
 import mockwebserver3.RecordedRequest;
 import org.junit.jupiter.api.AfterEach;
@@ -202,6 +206,46 @@ class D1AsyncClientTest {
     assertThatThrownBy(() -> client.queryAsync("SELECT 1").join())
         .isInstanceOf(CompletionException.class)
         .hasCauseInstanceOf(IllegalStateException.class);
+  }
+
+  @Test
+  void defaultExecutorRunsOnNamedDaemonThreadsAndIsShutDownOnClose() throws Exception {
+    AtomicReference<Thread> worker = new AtomicReference<>();
+    D1AsyncClient client = D1AsyncClient.builder()
+        .accountId("test-account-id")
+        .databaseId("test-database-id")
+        .apiToken("test-token")
+        .baseUrl("https://example.com/client/v4")
+        .transport(request -> {
+          worker.set(Thread.currentThread());
+          return new D1TransportResponse(200, Collections.emptyMap(), selectBody("[]", metaBody()));
+        })
+        .retryPolicy(D1RetryPolicy.none())
+        .build();
+
+    client.queryAsync("SELECT 1").get(1, TimeUnit.SECONDS);
+
+    assertThat(worker.get().getName()).startsWith("cloudflare-d1-async-");
+    assertThat(worker.get().isDaemon()).isTrue();
+
+    client.close();
+
+    assertThatThrownBy(() -> client.queryAsync("SELECT 1").join())
+        .isInstanceOf(CompletionException.class)
+        .hasCauseInstanceOf(RejectedExecutionException.class);
+  }
+
+  @Test
+  void callerSuppliedExecutorIsNotShutDownOnClose() {
+    ExecutorService executor = Executors.newSingleThreadExecutor();
+    try {
+      D1AsyncClient client = testClient(executor);
+      client.close();
+
+      assertThat(executor.isShutdown()).isFalse();
+    } finally {
+      executor.shutdown();
+    }
   }
 
   private D1AsyncClient testClient() {

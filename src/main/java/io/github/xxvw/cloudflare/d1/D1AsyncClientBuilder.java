@@ -1,26 +1,31 @@
 package io.github.xxvw.cloudflare.d1;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.github.xxvw.cloudflare.d1.internal.D1Threads;
 import java.net.URI;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.concurrent.Executor;
-import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * Builder for {@link D1AsyncClient}.
  *
  * <p>Account ID, database ID, and API token are required. Optional settings provide custom
  * endpoint, timeout, retry, HTTP transport, typed row mapping behavior, and executor selection.
+ *
+ * <p>When no executor is supplied, the built client creates its own executor backed by named
+ * daemon threads and shuts it down when the client closes.
  */
 public final class D1AsyncClientBuilder {
   private final D1ClientBuilder clientBuilder = D1Client.builder();
-  private Executor executor = defaultExecutor();
+  private Executor executor;
 
   D1AsyncClientBuilder() {}
 
-  static Executor defaultExecutor() {
-    return ForkJoinPool.commonPool();
+  static ExecutorService newOwnedExecutor() {
+    return Executors.newCachedThreadPool(D1Threads.daemonFactory("cloudflare-d1-async-"));
   }
 
   /**
@@ -147,7 +152,9 @@ public final class D1AsyncClientBuilder {
   /**
    * Sets the executor used to run asynchronous operations.
    *
-   * <p>The executor is owned by the caller and is not shut down when the client is closed.
+   * <p>The executor is owned by the caller and is not shut down when the client is closed. When
+   * no executor is set, the built client creates a daemon-thread executor that it owns and shuts
+   * down on close.
    *
    * @param executor executor for asynchronous operations
    * @return this builder
@@ -163,6 +170,11 @@ public final class D1AsyncClientBuilder {
    * @return configured async client
    */
   public D1AsyncClient build() {
-    return new D1AsyncClient(clientBuilder.build(), executor);
+    D1Client client = clientBuilder.build();
+    if (executor != null) {
+      return new D1AsyncClient(client, executor);
+    }
+    ExecutorService owned = newOwnedExecutor();
+    return new D1AsyncClient(client, owned, owned);
   }
 }
