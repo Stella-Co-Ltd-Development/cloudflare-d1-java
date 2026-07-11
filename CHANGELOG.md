@@ -6,6 +6,11 @@ This project follows Semantic Versioning.
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed exponential retry backoff overflowing for large retry attempt counts; delays are now always clamped at the configured maximum delay.
+- Preserved sub-millisecond backoff delays instead of truncating them to zero during jitter calculation and sleeping.
+
 ## [0.1.4] - 2026-06-26
 
 ### Changed
