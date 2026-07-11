@@ -17,6 +17,11 @@ import java.util.function.Supplier;
  * and returns {@link CompletableFuture} values. Failed requests complete futures exceptionally with
  * the same public exception types as synchronous operations.
  *
+ * <p>Query operations ({@code queryAsync}, {@code queryFirstAsync}, {@code rawAsync}) are retried
+ * by default and must be used for reads only: a retried statement can reach the server more than
+ * once (at-least-once semantics). Run writes through {@code executeAsync} or {@code batchAsync},
+ * which do not retry by default. See {@link D1RetryPolicy}.
+ *
  * <pre>{@code
  * try (D1AsyncClient d1 = D1AsyncClient.fromEnv()) {
  *   CompletableFuture<D1Result> future =

@@ -25,6 +25,11 @@ import java.util.function.Function;
  * <p>Create instances with {@link #builder()} or {@link #fromEnv()}. Instances are closeable to
  * prevent accidental reuse after application shutdown.
  *
+ * <p>Query operations ({@code query}, {@code queryFirst}, {@code raw}) are retried by default and
+ * must be used for reads only: a retried statement can reach the server more than once
+ * (at-least-once semantics). Run writes through {@code execute} or {@code batch}, which do not
+ * retry by default. See {@link D1RetryPolicy}.
+ *
  * <pre>{@code
  * try (D1Client d1 = D1Client.fromEnv()) {
  *   D1Result result = d1.query("SELECT id, name FROM users WHERE active = ?", true);
