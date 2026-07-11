@@ -8,6 +8,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 
@@ -90,6 +91,34 @@ class D1RetryExecutorTest {
     assertThat(sleeps).anySatisfy(delay -> assertThat(delay).isPositive());
   }
 
+  @Test
+  void retryAfterDelaysAreCappedAtMaxRetryAfter() {
+    D1RetryPolicy policy = D1RetryPolicy.builder()
+        .maxRetries(2)
+        .maxRetryAfter(Duration.ofSeconds(5))
+        .jitter(false)
+        .build();
+    D1RetryExecutor executor = executor(policy);
+
+    executor.execute(D1Operation.QUERY, retryAfterResponses("3600", 429, 429, 200));
+
+    assertThat(sleeps).containsExactly(Duration.ofSeconds(5), Duration.ofSeconds(5));
+  }
+
+  @Test
+  void retryAfterDelaysBelowTheCapAreUsedAsIs() {
+    D1RetryPolicy policy = D1RetryPolicy.builder()
+        .maxRetries(1)
+        .maxRetryAfter(Duration.ofSeconds(30))
+        .jitter(false)
+        .build();
+    D1RetryExecutor executor = executor(policy);
+
+    executor.execute(D1Operation.QUERY, retryAfterResponses("3", 429, 200));
+
+    assertThat(sleeps).containsExactly(Duration.ofSeconds(3));
+  }
+
   private D1RetryExecutor executor(D1RetryPolicy policy) {
     return new D1RetryExecutor(policy, new D1RetryAfterParser(), sleeps::add);
   }
@@ -104,5 +133,18 @@ class D1RetryExecutorTest {
 
   private static D1RetryExecutor.ThrowingSupplier<D1HttpResponse> alwaysStatus(int statusCode) {
     return () -> new D1HttpResponse(statusCode, Collections.emptyMap(), "{}");
+  }
+
+  private static D1RetryExecutor.ThrowingSupplier<D1HttpResponse> retryAfterResponses(
+      String retryAfter, int... statusCodes) {
+    AtomicInteger index = new AtomicInteger();
+    return () -> {
+      int position = Math.min(index.getAndIncrement(), statusCodes.length - 1);
+      int statusCode = statusCodes[position];
+      Map<String, List<String>> headers = statusCode == 200
+          ? Collections.<String, List<String>>emptyMap()
+          : Collections.singletonMap("Retry-After", Collections.singletonList(retryAfter));
+      return new D1HttpResponse(statusCode, headers, "{}");
+    };
   }
 }

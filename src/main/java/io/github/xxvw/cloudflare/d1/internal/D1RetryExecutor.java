@@ -48,7 +48,9 @@ public final class D1RetryExecutor {
     if (retryPolicy.respectRetryAfter()) {
       Optional<Duration> retryAfter = parseRetryAfter(response.firstHeader("Retry-After"));
       if (retryAfter.isPresent()) {
-        return retryAfter.get();
+        Duration delay = retryAfter.get();
+        Duration maxRetryAfter = retryPolicy.maxRetryAfter();
+        return delay.compareTo(maxRetryAfter) > 0 ? maxRetryAfter : delay;
       }
     }
     Duration calculatedDelay = exponentialDelay(retryAttempt);
