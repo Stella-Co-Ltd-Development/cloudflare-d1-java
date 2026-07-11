@@ -1,10 +1,10 @@
 package io.github.xxvw.cloudflare.d1;
 
+import io.github.xxvw.cloudflare.d1.internal.D1Headers;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -62,18 +62,7 @@ public final class D1TransportResponse {
    * @return first header value or {@code null}
    */
   public String firstHeader(String name) {
-    if (name == null) {
-      return null;
-    }
-    String expected = name.toLowerCase(Locale.ROOT);
-    for (Map.Entry<String, List<String>> entry : headers.entrySet()) {
-      if (entry.getKey() != null
-          && entry.getKey().toLowerCase(Locale.ROOT).equals(expected)
-          && !entry.getValue().isEmpty()) {
-        return entry.getValue().get(0);
-      }
-    }
-    return null;
+    return D1Headers.firstHeader(headers, name);
   }
 
   private static Map<String, List<String>> immutableHeaders(Map<String, List<String>> headers) {
