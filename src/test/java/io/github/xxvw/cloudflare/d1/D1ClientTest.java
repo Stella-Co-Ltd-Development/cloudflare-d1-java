@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.xxvw.cloudflare.d1.testsupport.UserRow;
+import java.io.IOException;
 import java.net.SocketTimeoutException;
 import java.time.Duration;
 import java.util.Arrays;
@@ -19,6 +20,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import mockwebserver3.MockResponse;
 import mockwebserver3.MockWebServer;
@@ -475,6 +477,37 @@ class D1ClientTest {
     assertThat(client.execute("UPDATE users SET name = ?", "Taro").success()).isTrue();
     assertThat(client.batch(D1Query.of("SELECT 1"))).hasSize(1);
     assertThat(server.getRequestCount()).isEqualTo(4);
+  }
+
+  @Test
+  void transientTransportFailuresAreRetriedForQueryButNotForExecute() {
+    D1RetryPolicy policy = D1RetryPolicy.builder()
+        .maxRetries(1)
+        .baseDelay(Duration.ZERO)
+        .maxDelay(Duration.ZERO)
+        .jitter(false)
+        .build();
+    AtomicInteger calls = new AtomicInteger();
+    D1Client client = D1Client.builder()
+        .accountId("test-account-id")
+        .databaseId("test-database-id")
+        .apiToken("test-token")
+        .baseUrl("https://example.com/client/v4")
+        .transport(request -> {
+          if (calls.incrementAndGet() % 2 == 1) {
+            throw new IOException("connection reset");
+          }
+          return new D1TransportResponse(200, Collections.emptyMap(), selectBody("[]", metaBody()));
+        })
+        .retryPolicy(policy)
+        .build();
+
+    assertThat(client.query("SELECT 1").success()).isTrue();
+    assertThat(calls).hasValue(2);
+
+    assertThatThrownBy(() -> client.execute("UPDATE users SET active = ?", false))
+        .isInstanceOf(D1TransportException.class);
+    assertThat(calls).hasValue(3);
   }
 
   @Test

@@ -1,9 +1,13 @@
 package io.github.xxvw.cloudflare.d1.internal;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.github.xxvw.cloudflare.d1.D1Operation;
 import io.github.xxvw.cloudflare.d1.D1RetryPolicy;
+import io.github.xxvw.cloudflare.d1.D1TimeoutException;
+import io.github.xxvw.cloudflare.d1.D1TransportException;
+import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -117,6 +121,74 @@ class D1RetryExecutorTest {
     executor.execute(D1Operation.QUERY, retryAfterResponses("3", 429, 200));
 
     assertThat(sleeps).containsExactly(Duration.ofSeconds(3));
+  }
+
+  @Test
+  void transientNetworkFailuresAreRetriedForRetryableOperations() {
+    D1RetryPolicy policy = D1RetryPolicy.builder()
+        .maxRetries(2)
+        .baseDelay(Duration.ofMillis(10))
+        .maxDelay(Duration.ofMillis(40))
+        .jitter(false)
+        .build();
+    D1RetryExecutor executor = executor(policy);
+    AtomicInteger calls = new AtomicInteger();
+
+    D1HttpResponse response = executor.execute(D1Operation.QUERY, () -> {
+      if (calls.incrementAndGet() <= 2) {
+        throw new D1TransportException(D1Operation.QUERY, new IOException("connection reset"));
+      }
+      return new D1HttpResponse(200, Collections.emptyMap(), "{}");
+    });
+
+    assertThat(response.statusCode()).isEqualTo(200);
+    assertThat(calls).hasValue(3);
+    assertThat(sleeps).containsExactly(Duration.ofMillis(10), Duration.ofMillis(20));
+  }
+
+  @Test
+  void networkFailuresPropagateTheOriginalExceptionWhenRetriesAreExhausted() {
+    D1RetryPolicy policy = D1RetryPolicy.builder()
+        .maxRetries(1)
+        .baseDelay(Duration.ZERO)
+        .maxDelay(Duration.ZERO)
+        .jitter(false)
+        .build();
+    D1RetryExecutor executor = executor(policy);
+
+    assertThatThrownBy(() -> executor.execute(D1Operation.QUERY, () -> {
+      throw new D1TimeoutException(D1Operation.QUERY, new IOException("timed out"));
+    })).isInstanceOf(D1TimeoutException.class);
+    assertThat(sleeps).hasSize(1);
+  }
+
+  @Test
+  void networkFailuresAreNotRetriedForNonRetryableOperations() {
+    D1RetryExecutor executor = executor(D1RetryPolicy.defaultPolicy());
+    AtomicInteger calls = new AtomicInteger();
+
+    assertThatThrownBy(() -> executor.execute(D1Operation.EXECUTE, () -> {
+      calls.incrementAndGet();
+      throw new D1TransportException(D1Operation.EXECUTE, new IOException("connection reset"));
+    })).isInstanceOf(D1TransportException.class);
+    assertThat(calls).hasValue(1);
+    assertThat(sleeps).isEmpty();
+  }
+
+  @Test
+  void networkFailureRetriesCanBeDisabled() {
+    D1RetryPolicy policy = D1RetryPolicy.builder()
+        .retryNetworkErrors(false)
+        .build();
+    D1RetryExecutor executor = executor(policy);
+    AtomicInteger calls = new AtomicInteger();
+
+    assertThatThrownBy(() -> executor.execute(D1Operation.QUERY, () -> {
+      calls.incrementAndGet();
+      throw new D1TransportException(D1Operation.QUERY, new IOException("connection reset"));
+    })).isInstanceOf(D1TransportException.class);
+    assertThat(calls).hasValue(1);
+    assertThat(sleeps).isEmpty();
   }
 
   private D1RetryExecutor executor(D1RetryPolicy policy) {

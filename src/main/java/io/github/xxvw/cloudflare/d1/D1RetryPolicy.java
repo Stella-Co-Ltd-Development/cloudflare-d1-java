@@ -35,6 +35,7 @@ public final class D1RetryPolicy {
   private final boolean jitter;
   private final boolean respectRetryAfter;
   private final Duration maxRetryAfter;
+  private final boolean retryNetworkErrors;
   private final Set<Integer> retryStatusCodes;
 
   private D1RetryPolicy(Builder builder) {
@@ -52,6 +53,7 @@ public final class D1RetryPolicy {
     this.jitter = builder.jitter;
     this.respectRetryAfter = builder.respectRetryAfter;
     this.maxRetryAfter = requireNonNegative(builder.maxRetryAfter, "maxRetryAfter");
+    this.retryNetworkErrors = builder.retryNetworkErrors;
     if (maxRetries < 0) {
       throw new IllegalArgumentException("maxRetries must be greater than or equal to 0");
     }
@@ -196,6 +198,20 @@ public final class D1RetryPolicy {
   }
 
   /**
+   * Whether transient network failures may be retried.
+   *
+   * <p>When enabled, transport and timeout failures are retried with exponential backoff for
+   * operations whose retries are enabled. Because a request may have reached the server before
+   * failing, network retries have at-least-once semantics; keep execute and batch retries
+   * disabled unless the statements are safe to repeat.
+   *
+   * @return true when network failure retries are enabled
+   */
+  public boolean retryNetworkErrors() {
+    return retryNetworkErrors;
+  }
+
+  /**
    * HTTP status codes eligible for retry.
    *
    * @return immutable status code set
@@ -265,6 +281,7 @@ public final class D1RetryPolicy {
     private boolean jitter = true;
     private boolean respectRetryAfter = true;
     private Duration maxRetryAfter = Duration.ofSeconds(30);
+    private boolean retryNetworkErrors = true;
     private Set<Integer> retryStatusCodes =
         new LinkedHashSet<>(Arrays.asList(429, 500, 502, 503, 504));
 
@@ -388,6 +405,17 @@ public final class D1RetryPolicy {
      */
     public Builder maxRetryAfter(Duration maxRetryAfter) {
       this.maxRetryAfter = maxRetryAfter;
+      return this;
+    }
+
+    /**
+     * Enables or disables retries of transient network failures.
+     *
+     * @param retryNetworkErrors whether network failure retries are enabled
+     * @return this builder
+     */
+    public Builder retryNetworkErrors(boolean retryNetworkErrors) {
+      this.retryNetworkErrors = retryNetworkErrors;
       return this;
     }
 

@@ -8,6 +8,7 @@ This project follows Semantic Versioning.
 
 ### Changed
 
+- Transient network failures (transport and timeout errors) are now retried with exponential backoff for operations whose retries are enabled; opt out with the new `retryNetworkErrors(false)` retry policy setting.
 - Server-provided Retry-After delays are now capped by the new `maxRetryAfter` retry policy setting (default 30 seconds); `D1RateLimitException.retryAfter()` still exposes the raw server value.
 
 ### Fixed
