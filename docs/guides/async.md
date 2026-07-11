@@ -16,7 +16,7 @@ try (D1AsyncClient d1 = D1AsyncClient.fromEnv()) {
 
 ## Configure an Executor
 
-By default, async operations use `ForkJoinPool.commonPool()`. Provide an executor when your application needs explicit concurrency control.
+By default, the client creates its own executor backed by named daemon threads (`cloudflare-d1-async-*`) and shuts it down when the client closes. Provide an executor when your application needs explicit concurrency control.
 
 ```java
 ExecutorService executor = Executors.newFixedThreadPool(4);
@@ -35,7 +35,7 @@ try (D1AsyncClient d1 = D1AsyncClient.builder()
 }
 ```
 
-The executor is owned by your application. Closing `D1AsyncClient` does not shut it down.
+A caller-supplied executor is owned by your application. Closing `D1AsyncClient` never shuts it down; only the client-created default executor is shut down on close.
 
 ## Run Parallel Queries
 
