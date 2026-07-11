@@ -216,6 +216,72 @@ class D1AsyncClientTest {
   }
 
   @Test
+  void asyncQueryRetriesRetryableStatusesAndSucceeds() throws Exception {
+    server.enqueue(new mockwebserver3.MockResponse.Builder()
+        .code(429)
+        .setHeader("Retry-After", "0")
+        .body("{\"success\":false}")
+        .build());
+    server.enqueue(ok(selectBody("[{\"id\":1,\"name\":\"Taro\"}]", metaBody())));
+    D1RetryPolicy policy = D1RetryPolicy.builder()
+        .maxRetries(1)
+        .baseDelay(Duration.ZERO)
+        .maxDelay(Duration.ZERO)
+        .jitter(false)
+        .build();
+    D1AsyncClient client = D1AsyncClient.builder()
+        .accountId("test-account-id")
+        .databaseId("test-database-id")
+        .apiToken("test-token")
+        .baseUrl(server.url("/client/v4").uri())
+        .retryPolicy(policy)
+        .executor(Runnable::run)
+        .build();
+
+    D1Result result = client.queryAsync("SELECT 1").get(1, TimeUnit.SECONDS);
+
+    assertThat(result.rowCount()).isEqualTo(1);
+    assertThat(server.getRequestCount()).isEqualTo(2);
+  }
+
+  @Test
+  void asyncBatchPartialFailurePropagatesBatchExceptionDetails() {
+    server.enqueue(ok("{\"success\":true,\"result\":["
+        + "{\"success\":true,\"results\":[],\"meta\":{\"changes\":1}},"
+        + "{\"success\":false,\"results\":[],\"meta\":{},\"errors\":[{\"code\":7500,\"message\":\"failed\"}]}"
+        + "],\"errors\":[],\"messages\":[]}"));
+    D1AsyncClient client = testClient();
+
+    CompletableFuture<List<D1Result>> future = client.batchAsync(Arrays.asList(
+        D1Query.of("INSERT INTO users(name) VALUES (?)", "Taro"),
+        D1Query.of("SELECT * FROM missing")));
+
+    assertThatThrownBy(future::join)
+        .isInstanceOf(CompletionException.class)
+        .hasCauseInstanceOf(D1BatchException.class);
+    D1BatchException cause = (D1BatchException) future.handle((value, error) -> error.getCause()).join();
+    assertThat(cause.failedIndex()).isEqualTo(1);
+    assertThat(cause.partialResults()).hasSize(2);
+    assertThat(cause.errors()).extracting(D1ResponseInfo::code).containsExactly(7500);
+  }
+
+  @Test
+  void executeAndRawBatchAsyncFailuresPropagatePublicExceptions() {
+    server.enqueue(jsonError(500));
+    server.enqueue(ok("{\"success\":true,\"result\":[{\"success\":false,"
+        + "\"results\":{\"columns\":[],\"rows\":[]},\"errors\":[{\"code\":3,\"message\":\"batch\"}]}],"
+        + "\"errors\":[],\"messages\":[]}"));
+    D1AsyncClient client = testClient();
+
+    assertThatThrownBy(() -> client.executeAsync("UPDATE users SET active = ?", false).join())
+        .isInstanceOf(CompletionException.class)
+        .hasCauseInstanceOf(D1ApiException.class);
+    assertThatThrownBy(() -> client.rawBatchAsync(D1Query.of("SELECT 1")).join())
+        .isInstanceOf(CompletionException.class)
+        .hasCauseInstanceOf(D1ApiException.class);
+  }
+
+  @Test
   void closePreventsFutureAsyncRequests() {
     D1AsyncClient client = testClient();
     client.close();
