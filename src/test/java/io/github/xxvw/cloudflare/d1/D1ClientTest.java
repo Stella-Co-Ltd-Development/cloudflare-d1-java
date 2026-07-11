@@ -545,6 +545,36 @@ class D1ClientTest {
     assertThatThrownBy(() -> client.query("SELECT 1")).isInstanceOf(IllegalStateException.class);
   }
 
+  @Test
+  void closeClosesTheOwnedTransportExactlyOnce() {
+    AtomicInteger closes = new AtomicInteger();
+    D1Transport transport = new D1Transport() {
+      @Override
+      public D1TransportResponse send(D1TransportRequest request) {
+        return new D1TransportResponse(200, Collections.emptyMap(), selectBody("[]", metaBody()));
+      }
+
+      @Override
+      public void close() {
+        closes.incrementAndGet();
+      }
+    };
+    D1Client client = D1Client.builder()
+        .accountId("test-account-id")
+        .databaseId("test-database-id")
+        .apiToken("test-token")
+        .baseUrl("https://example.com/client/v4")
+        .transport(transport)
+        .retryPolicy(D1RetryPolicy.none())
+        .build();
+
+    assertThat(client.query("SELECT 1").success()).isTrue();
+    client.close();
+    client.close();
+
+    assertThat(closes).hasValue(1);
+  }
+
   private D1Client testClient() {
     return testClient(D1RetryPolicy.none());
   }
