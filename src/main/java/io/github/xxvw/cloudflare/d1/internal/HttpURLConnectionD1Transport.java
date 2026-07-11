@@ -46,8 +46,11 @@ public final class HttpURLConnectionD1Transport implements D1Transport {
       String responseBody = readBody(statusCode >= 400 ? http.getErrorStream() : http.getInputStream());
       Map<String, List<String>> headers = http.getHeaderFields();
       return new D1TransportResponse(statusCode, headers, responseBody);
-    } finally {
+    } catch (IOException | RuntimeException e) {
+      // Disconnect only on failure; successful exchanges fully read and close their streams in
+      // readBody, which lets the JVM return the connection to the keep-alive pool.
       http.disconnect();
+      throw e;
     }
   }
 

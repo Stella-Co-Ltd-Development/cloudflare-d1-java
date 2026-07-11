@@ -109,6 +109,23 @@ class HttpURLConnectionD1TransportTest {
   }
 
   @Test
+  void reusesKeepAliveConnectionsAcrossSequentialRequests() throws Exception {
+    server.enqueue(new MockResponse.Builder().code(200).body("{}").build());
+    server.enqueue(new MockResponse.Builder().code(200).body("{}").build());
+    HttpURLConnectionD1Transport transport = new HttpURLConnectionD1Transport(Duration.ofSeconds(5));
+
+    transport.send(request(server.url("/query").uri(), "{}", Duration.ofSeconds(10),
+        Collections.<String, String>emptyMap()));
+    transport.send(request(server.url("/query").uri(), "{}", Duration.ofSeconds(10),
+        Collections.<String, String>emptyMap()));
+
+    RecordedRequest first = server.takeRequest();
+    RecordedRequest second = server.takeRequest();
+    assertThat(second.getConnectionIndex()).isEqualTo(first.getConnectionIndex());
+    assertThat(second.getExchangeIndex()).isEqualTo(first.getExchangeIndex() + 1);
+  }
+
+  @Test
   void readsBodiesLargerThanTheInternalReadBuffer() throws Exception {
     StringBuilder body = new StringBuilder(100_000);
     for (int i = 0; i < 100_000; i++) {
