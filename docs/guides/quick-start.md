@@ -8,7 +8,7 @@
 <dependency>
   <groupId>io.github.xxvw</groupId>
   <artifactId>cloudflare-d1-java</artifactId>
-  <version>0.1.4</version>
+  <version>0.2.0</version>
 </dependency>
 ```
 
@@ -17,7 +17,7 @@ Java 8 or newer is required.
 Gradle:
 
 ```groovy
-implementation "io.github.xxvw:cloudflare-d1-java:0.1.4"
+implementation "io.github.xxvw:cloudflare-d1-java:0.2.0"
 ```
 
 ## Configure Credentials
