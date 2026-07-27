@@ -44,6 +44,7 @@ Rules:
 - Missing `results` means empty rows.
 - `rows()` must return an immutable list.
 - Each row map must be immutable.
+- Nested JSON maps and lists in rows must be recursively immutable and defensively copied.
 - `firstRow()` must return an immutable map if present.
 - `messages()` and `errors()` must return immutable lists.
 - `rawBody()` must contain the raw HTTP response body.
@@ -99,6 +100,8 @@ timings = Optional.empty()
 ```
 
 Unknown meta fields must be preserved in `additionalProperties()`.
+Nested JSON maps and lists in `additionalProperties()` must be recursively immutable and
+defensively copied.
 
 ## D1Timings
 
@@ -246,7 +249,7 @@ public Map<String, Object> row();
 
 Rules:
 
-- `row()` must be immutable.
+- `row()` and its nested JSON maps and lists must be immutable and defensively copied.
 - Default exception message must not include row contents.
 
 ## Error Mapping

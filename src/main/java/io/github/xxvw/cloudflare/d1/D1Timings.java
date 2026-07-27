@@ -1,7 +1,6 @@
 package io.github.xxvw.cloudflare.d1;
 
-import java.util.Collections;
-import java.util.LinkedHashMap;
+import io.github.xxvw.cloudflare.d1.internal.D1ImmutableValues;
 import java.util.Map;
 
 /**
@@ -19,9 +18,7 @@ public final class D1Timings {
    */
   public D1Timings(double sqlDurationMs, Map<String, Object> additionalProperties) {
     this.sqlDurationMs = sqlDurationMs;
-    this.additionalProperties = additionalProperties == null
-        ? Collections.<String, Object>emptyMap()
-        : Collections.unmodifiableMap(new LinkedHashMap<>(additionalProperties));
+    this.additionalProperties = D1ImmutableValues.immutableMap(additionalProperties);
   }
 
   /**

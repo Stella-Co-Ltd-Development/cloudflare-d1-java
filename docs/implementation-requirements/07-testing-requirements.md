@@ -102,6 +102,7 @@ Required cases:
 
 - Rows list is immutable
 - Row map is immutable
+- Nested JSON maps and lists are immutable and defensively copied
 - Messages list is immutable
 - Errors list is immutable
 - additionalProperties map is immutable
