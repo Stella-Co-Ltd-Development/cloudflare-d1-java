@@ -6,10 +6,6 @@ This project follows Semantic Versioning.
 
 ## [Unreleased]
 
-### Fixed
-
-- `D1AsyncClient.close()` now allows accepted queued and in-flight operations to finish before closing the transport, rejects all post-close operations consistently, and leaves caller-supplied executors open.
-
 ## [0.2.0] - 2026-07-11
 
 See the [migration guide](docs/guides/migration-0.2.md) for upgrade steps from 0.1.x.
