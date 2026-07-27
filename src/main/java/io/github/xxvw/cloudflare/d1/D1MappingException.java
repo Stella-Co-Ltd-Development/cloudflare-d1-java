@@ -1,7 +1,7 @@
 package io.github.xxvw.cloudflare.d1;
 
+import io.github.xxvw.cloudflare.d1.internal.D1ImmutableValues;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -30,7 +30,7 @@ public final class D1MappingException extends D1Exception {
         Collections.<D1ResponseInfo>emptyList(), Collections.<D1ResponseInfo>emptyList());
     this.targetType = Objects.requireNonNull(targetType, "targetType must not be null");
     this.rowIndex = rowIndex;
-    this.row = row == null ? Collections.<String, Object>emptyMap() : Collections.unmodifiableMap(new LinkedHashMap<>(row));
+    this.row = D1ImmutableValues.immutableMap(row);
   }
 
   /**

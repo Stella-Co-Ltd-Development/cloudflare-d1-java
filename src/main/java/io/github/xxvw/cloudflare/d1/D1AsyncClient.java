@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
@@ -32,9 +33,16 @@ import java.util.function.Supplier;
  * }</pre>
  */
 public final class D1AsyncClient implements AutoCloseable {
+  private static final String CLOSED_MESSAGE = "D1AsyncClient is closed";
+
   private final D1Client delegate;
   private final Executor executor;
   private final ExecutorService ownedExecutor;
+  private final Object lifecycleLock = new Object();
+
+  private boolean closed;
+  private boolean delegateCloseStarted;
+  private long pendingOperations;
 
   D1AsyncClient(D1Client delegate, Executor executor) {
     this(delegate, executor, null);
@@ -434,25 +442,125 @@ public final class D1AsyncClient implements AutoCloseable {
   /**
    * Closes this client and prevents further requests.
    *
+   * <p>This method does not wait for accepted operations to finish. Operations accepted before
+   * close are allowed to complete, and the underlying transport is closed exactly once after the
+   * final accepted operation. Operations submitted after close return futures failed with
+   * {@link IllegalStateException} and the message {@code D1AsyncClient is closed}. A deferred
+   * transport close failure fails the final accepted operation's future, or is suppressed by that
+   * operation's failure when both fail.
+   *
    * <p>When the client owns its executor (no executor was supplied to the builder), the owned
-   * executor is shut down; already-submitted operations are allowed to complete. Caller-supplied
-   * executors are never shut down.
+   * executor is shut down. Caller-supplied executors are never shut down.
    */
   @Override
   public void close() {
-    delegate.close();
-    if (ownedExecutor != null) {
-      ownedExecutor.shutdown();
+    boolean closeDelegate;
+    synchronized (lifecycleLock) {
+      if (closed) {
+        return;
+      }
+      closed = true;
+      if (ownedExecutor != null) {
+        ownedExecutor.shutdown();
+      }
+      closeDelegate = beginDelegateCloseIfReady();
+    }
+    if (closeDelegate) {
+      delegate.close();
     }
   }
 
   private <T> CompletableFuture<T> supply(Supplier<T> supplier) {
-    try {
-      return CompletableFuture.supplyAsync(supplier, executor);
-    } catch (RejectedExecutionException e) {
-      CompletableFuture<T> failed = new CompletableFuture<>();
-      failed.completeExceptionally(e);
-      return failed;
+    CompletableFuture<T> future = new CompletableFuture<>();
+    synchronized (lifecycleLock) {
+      if (closed) {
+        future.completeExceptionally(new IllegalStateException(CLOSED_MESSAGE));
+        return future;
+      }
+
+      pendingOperations++;
     }
+
+    try {
+      executor.execute(() -> runAcceptedOperation(supplier, future));
+      return future;
+    } catch (RuntimeException | Error submissionFailure) {
+      boolean closeDelegate;
+      synchronized (lifecycleLock) {
+        pendingOperations--;
+        closeDelegate = beginDelegateCloseIfReady();
+      }
+      if (closeDelegate) {
+        Throwable closeFailure = closeDelegateSafely();
+        if (closeFailure != null && closeFailure != submissionFailure) {
+          submissionFailure.addSuppressed(closeFailure);
+        }
+      }
+      if (submissionFailure instanceof RejectedExecutionException) {
+        future.completeExceptionally(submissionFailure);
+        return future;
+      }
+      if (submissionFailure instanceof RuntimeException) {
+        throw (RuntimeException) submissionFailure;
+      }
+      throw (Error) submissionFailure;
+    }
+  }
+
+  private <T> void runAcceptedOperation(Supplier<T> supplier, CompletableFuture<T> future) {
+    T result = null;
+    Throwable operationFailure = null;
+    try {
+      result = supplier.get();
+    } catch (Throwable failure) {
+      operationFailure = failure;
+    }
+
+    Throwable closeFailure = completeAcceptedOperation();
+    if (operationFailure != null) {
+      if (closeFailure != null && closeFailure != operationFailure) {
+        operationFailure.addSuppressed(closeFailure);
+      }
+      future.completeExceptionally(asCompletionException(operationFailure));
+    } else if (closeFailure != null) {
+      future.completeExceptionally(asCompletionException(closeFailure));
+    } else {
+      future.complete(result);
+    }
+  }
+
+  private static CompletionException asCompletionException(Throwable failure) {
+    return failure instanceof CompletionException
+        ? (CompletionException) failure
+        : new CompletionException(failure);
+  }
+
+  private Throwable completeAcceptedOperation() {
+    boolean closeDelegate;
+    synchronized (lifecycleLock) {
+      pendingOperations--;
+      closeDelegate = beginDelegateCloseIfReady();
+    }
+    if (!closeDelegate) {
+      return null;
+    }
+    return closeDelegateSafely();
+  }
+
+  private Throwable closeDelegateSafely() {
+    try {
+      delegate.close();
+      return null;
+    } catch (Throwable failure) {
+      return failure;
+    }
+  }
+
+  private boolean beginDelegateCloseIfReady() {
+    if (closed && pendingOperations == 0 && !delegateCloseStarted) {
+      delegateCloseStarted = true;
+      return true;
+    }
+    return false;
   }
 }

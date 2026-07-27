@@ -34,6 +34,11 @@ List<D1RawResult> results = d1.rawBatch(
 
 Empty raw batches are rejected.
 
+If an item-level result fails, `rawBatch(...)` throws `D1RawBatchException`. Use
+`failedIndex()` to locate the first failed item and `partialResults()` to inspect the immutable list
+of raw results returned by D1. HTTP failures and top-level API failures continue to use the standard
+`D1ApiException` hierarchy.
+
 ## Async Raw Queries
 
 `D1AsyncClient` provides matching asynchronous methods:

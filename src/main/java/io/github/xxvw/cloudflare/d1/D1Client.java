@@ -396,7 +396,7 @@ public final class D1Client implements AutoCloseable {
     if (!isSuccessfulStatus(response.statusCode())) {
       throw exceptionFactory.httpException(response, D1Operation.BATCH, null);
     }
-    D1ApiResponseDto apiResponse = parseApiResponse(response);
+    D1ApiResponseDto apiResponse = parseApiResponse(response, D1Operation.BATCH);
     if (apiResponse.success != null && !apiResponse.success) {
       throw exceptionFactory.topLevelFailure(
           response.statusCode(), response.body(), D1Operation.BATCH, apiResponse, null);
@@ -474,7 +474,7 @@ public final class D1Client implements AutoCloseable {
     if (!isSuccessfulStatus(response.statusCode())) {
       throw exceptionFactory.httpException(response, D1Operation.RAW_BATCH, null);
     }
-    D1RawApiResponseDto apiResponse = parseRawApiResponse(response);
+    D1RawApiResponseDto apiResponse = parseRawApiResponse(response, D1Operation.RAW_BATCH);
     if (apiResponse.success != null && !apiResponse.success) {
       throw exceptionFactory.topLevelRawFailure(
           response.statusCode(), response.body(), D1Operation.RAW_BATCH, apiResponse, null);
@@ -516,7 +516,7 @@ public final class D1Client implements AutoCloseable {
     if (!isSuccessfulStatus(response.statusCode())) {
       throw exceptionFactory.httpException(response, operation, query.sql());
     }
-    D1ApiResponseDto apiResponse = parseApiResponse(response);
+    D1ApiResponseDto apiResponse = parseApiResponse(response, operation);
     if (apiResponse.success != null && !apiResponse.success) {
       throw exceptionFactory.topLevelFailure(
           response.statusCode(), response.body(), operation, apiResponse, query.sql());
@@ -534,7 +534,7 @@ public final class D1Client implements AutoCloseable {
     if (!isSuccessfulStatus(response.statusCode())) {
       throw exceptionFactory.httpException(response, D1Operation.RAW, query.sql());
     }
-    D1RawApiResponseDto apiResponse = parseRawApiResponse(response);
+    D1RawApiResponseDto apiResponse = parseRawApiResponse(response, D1Operation.RAW);
     if (apiResponse.success != null && !apiResponse.success) {
       throw exceptionFactory.topLevelRawFailure(
           response.statusCode(), response.body(), D1Operation.RAW, apiResponse, query.sql());
@@ -546,13 +546,15 @@ public final class D1Client implements AutoCloseable {
     return result;
   }
 
-  private D1ApiResponseDto parseApiResponse(D1HttpResponse response) {
+  private D1ApiResponseDto parseApiResponse(
+      D1HttpResponse response,
+      D1Operation operation) {
     try {
       return responseParser.parseApiResponse(response.body());
     } catch (JsonProcessingException e) {
       throw new D1ApiException(
           "D1 API response was not valid JSON",
-          null,
+          operation,
           response.statusCode(),
           response.body(),
           Collections.<D1ResponseInfo>emptyList(),
@@ -560,13 +562,15 @@ public final class D1Client implements AutoCloseable {
     }
   }
 
-  private D1RawApiResponseDto parseRawApiResponse(D1HttpResponse response) {
+  private D1RawApiResponseDto parseRawApiResponse(
+      D1HttpResponse response,
+      D1Operation operation) {
     try {
       return responseParser.parseRawApiResponse(response.body());
     } catch (JsonProcessingException e) {
       throw new D1ApiException(
           "D1 API response was not valid JSON",
-          null,
+          operation,
           response.statusCode(),
           response.body(),
           Collections.<D1ResponseInfo>emptyList(),

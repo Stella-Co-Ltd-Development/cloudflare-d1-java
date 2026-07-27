@@ -38,6 +38,17 @@ configuration before `build()`.
 
 A caller-supplied executor is owned by your application. Closing `D1AsyncClient` never shuts it down; only the client-created default executor is shut down on close.
 
+## Close a Client
+
+`close()` rejects new operations immediately and returns without waiting for work that was already
+accepted. Accepted queued and in-flight operations are allowed to finish. The underlying transport
+is closed exactly once after the final accepted operation completes.
+
+Calls made after close return a failed `CompletableFuture` whose cause is an
+`IllegalStateException` with the message `D1AsyncClient is closed`. If deferred transport cleanup
+fails, that failure completes the final accepted future exceptionally. When the operation itself
+also fails, the cleanup failure is attached to the operation failure as a suppressed exception.
+
 ## Run Parallel Queries
 
 ```java

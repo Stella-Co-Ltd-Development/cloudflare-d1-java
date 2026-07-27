@@ -1,7 +1,6 @@
 package io.github.xxvw.cloudflare.d1;
 
-import java.util.Collections;
-import java.util.LinkedHashMap;
+import io.github.xxvw.cloudflare.d1.internal.D1ImmutableValues;
 import java.util.Map;
 import java.util.Optional;
 
@@ -34,9 +33,7 @@ public final class D1ResponseInfo {
     this.message = message;
     this.documentationUrl = documentationUrl;
     this.source = source;
-    this.additionalProperties = additionalProperties == null
-        ? Collections.<String, Object>emptyMap()
-        : Collections.unmodifiableMap(new LinkedHashMap<>(additionalProperties));
+    this.additionalProperties = D1ImmutableValues.immutableMap(additionalProperties);
   }
 
   /**

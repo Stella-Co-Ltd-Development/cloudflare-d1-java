@@ -69,6 +69,7 @@
 - [ ] 5xx maps to `D1ApiException`.
 - [ ] Query result failure maps to `D1QueryException`.
 - [ ] Batch partial failure maps to `D1BatchException`.
+- [ ] Raw batch item failure maps to `D1RawBatchException`.
 - [ ] Mapping failure maps to `D1MappingException`.
 - [ ] Timeout maps to `D1TimeoutException`.
 - [ ] Transport failure maps to `D1TransportException`.

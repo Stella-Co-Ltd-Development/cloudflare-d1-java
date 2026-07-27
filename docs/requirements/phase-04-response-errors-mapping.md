@@ -35,7 +35,8 @@ D1Exception
  │   ├─ D1AuthorizationException
  │   ├─ D1RateLimitException
  │   ├─ D1QueryException
- │   └─ D1BatchException
+ │   ├─ D1BatchException
+ │   └─ D1RawBatchException
  ├─ D1MappingException
  ├─ D1TimeoutException
  └─ D1TransportException
@@ -51,6 +52,7 @@ D1Exception
 - HTTP 5xx: `D1ApiException`
 - Query result `success=false`: `D1QueryException`
 - Batch result with any failed item: `D1BatchException`
+- Raw batch result with any failed item: `D1RawBatchException`
 - Mapping failure: `D1MappingException`
 - Timeout: `D1TimeoutException`
 - Network failure: `D1TransportException`
