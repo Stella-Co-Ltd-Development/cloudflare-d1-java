@@ -1,5 +1,6 @@
 package io.github.xxvw.cloudflare.d1;
 
+import io.github.xxvw.cloudflare.d1.internal.D1ImmutableValues;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -139,9 +140,7 @@ public final class D1RawResult {
     }
     List<List<Object>> copy = new ArrayList<>(rows.size());
     for (List<Object> row : rows) {
-      copy.add(row == null
-          ? Collections.<Object>emptyList()
-          : Collections.unmodifiableList(new ArrayList<>(row)));
+      copy.add(D1ImmutableValues.immutableList(row));
     }
     return Collections.unmodifiableList(copy);
   }

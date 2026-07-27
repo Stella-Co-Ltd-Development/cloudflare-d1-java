@@ -1,7 +1,7 @@
 package io.github.xxvw.cloudflare.d1;
 
+import io.github.xxvw.cloudflare.d1.internal.D1ImmutableValues;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalLong;
@@ -66,9 +66,7 @@ public final class D1Meta {
     this.servedByRegion = servedByRegion;
     this.servedByPrimary = servedByPrimary;
     this.timings = timings;
-    this.additionalProperties = additionalProperties == null
-        ? Collections.<String, Object>emptyMap()
-        : Collections.unmodifiableMap(new LinkedHashMap<>(additionalProperties));
+    this.additionalProperties = D1ImmutableValues.immutableMap(additionalProperties);
   }
 
   /**
