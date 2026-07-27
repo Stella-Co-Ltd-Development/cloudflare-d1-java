@@ -10,16 +10,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.github.xxvw.cloudflare.d1.testsupport.UserRow;
+import java.io.IOException;
 import java.net.SocketTimeoutException;
 import java.time.Duration;
+import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -291,40 +295,254 @@ class D1AsyncClientTest {
   }
 
   @Test
-  void closePreventsFutureAsyncRequests() {
-    D1AsyncClient client = testClient();
+  void closeAllowsAcceptedQueuedOperationsToFinishBeforeClosingTheTransport() throws Exception {
+    ManualExecutor executor = new ManualExecutor();
+    AtomicInteger closes = new AtomicInteger();
+    D1AsyncClient client = lifecycleClient(executor, successfulTransport(closes));
+
+    CompletableFuture<D1Result> firstAccepted = client.queryAsync("SELECT 1");
+    CompletableFuture<D1Result> lastAccepted = client.queryAsync("SELECT 2");
+
+    assertThat(executor.hasQueuedTask()).isTrue();
+    assertThat(firstAccepted).isNotDone();
+    assertThat(lastAccepted).isNotDone();
+
+    client.close();
     client.close();
 
-    assertThatThrownBy(() -> client.queryAsync("SELECT 1").join())
-        .isInstanceOf(CompletionException.class)
-        .hasCauseInstanceOf(IllegalStateException.class);
+    assertThat(firstAccepted).isNotDone();
+    assertThat(lastAccepted).isNotDone();
+    assertThat(closes).hasValue(0);
+    assertClosedFailure(client.queryAsync("SELECT 3"));
+
+    executor.runQueuedTask();
+
+    assertThat(firstAccepted.get(1, TimeUnit.SECONDS).success()).isTrue();
+    assertThat(lastAccepted).isNotDone();
+    assertThat(closes).hasValue(0);
+
+    executor.runQueuedTask();
+
+    assertThat(lastAccepted.get(1, TimeUnit.SECONDS).success()).isTrue();
+    assertThat(closes).hasValue(1);
   }
 
   @Test
-  void defaultExecutorRunsOnNamedDaemonThreadsAndIsShutDownOnClose() throws Exception {
+  void closeDoesNotWaitForExecutorAcceptanceInProgress() throws Exception {
+    BlockingAcceptanceExecutor executor = new BlockingAcceptanceExecutor();
+    AtomicInteger closes = new AtomicInteger();
+    D1AsyncClient client = lifecycleClient(executor, successfulTransport(closes));
+    ExecutorService callers = Executors.newFixedThreadPool(2);
+    try {
+      CompletableFuture<CompletableFuture<D1Result>> submitting =
+          CompletableFuture.supplyAsync(() -> client.queryAsync("SELECT 1"), callers);
+      assertThat(executor.awaitAcceptance()).isTrue();
+
+      CountDownLatch closeInvoked = new CountDownLatch(1);
+      CompletableFuture<Void> closing = CompletableFuture.runAsync(() -> {
+        closeInvoked.countDown();
+        client.close();
+      }, callers);
+      assertThat(closeInvoked.await(1, TimeUnit.SECONDS)).isTrue();
+      closing.get(1, TimeUnit.SECONDS);
+      assertThat(closes).hasValue(0);
+
+      executor.finishAcceptance();
+
+      CompletableFuture<D1Result> accepted = submitting.get(1, TimeUnit.SECONDS);
+      assertThat(accepted).isNotDone();
+      assertThat(closes).hasValue(0);
+
+      executor.runAcceptedTask();
+
+      assertThat(accepted.get(1, TimeUnit.SECONDS).success()).isTrue();
+      assertThat(closes).hasValue(1);
+    } finally {
+      executor.finishAcceptance();
+      callers.shutdownNow();
+    }
+  }
+
+  @Test
+  void closeFailsAllOperationFamiliesConsistentlyWithCallerSuppliedExecutor() {
+    D1AsyncClient client = testClient();
+    client.close();
+
+    assertClosedFailure(client.queryAsync("SELECT 1"));
+    assertClosedFailure(client.queryFirstAsync("SELECT 1"));
+    assertClosedFailure(client.executeAsync("UPDATE users SET active = ?", false));
+    assertClosedFailure(client.batchAsync(D1Query.of("SELECT 1")));
+    assertClosedFailure(client.rawAsync("SELECT 1"));
+    assertClosedFailure(client.rawBatchAsync(D1Query.of("SELECT 1")));
+  }
+
+  @Test
+  void defaultExecutorFinishesInFlightWorkAndIsShutDownOnClose() throws Exception {
     AtomicReference<Thread> worker = new AtomicReference<>();
+    AtomicInteger closes = new AtomicInteger();
+    CountDownLatch requestStarted = new CountDownLatch(1);
+    CountDownLatch finishRequest = new CountDownLatch(1);
     D1AsyncClient client = D1AsyncClient.builder()
         .accountId("test-account-id")
         .databaseId("test-database-id")
         .apiToken("test-token")
         .baseUrl("https://example.com/client/v4")
-        .transport(request -> {
-          worker.set(Thread.currentThread());
-          return new D1TransportResponse(200, Collections.emptyMap(), selectBody("[]", metaBody()));
+        .transport(new D1Transport() {
+          @Override
+          public D1TransportResponse send(D1TransportRequest request) throws IOException {
+            worker.set(Thread.currentThread());
+            requestStarted.countDown();
+            try {
+              finishRequest.await();
+            } catch (InterruptedException e) {
+              Thread.currentThread().interrupt();
+              throw new IOException("interrupted", e);
+            }
+            return new D1TransportResponse(200, Collections.emptyMap(), selectBody("[]", metaBody()));
+          }
+
+          @Override
+          public void close() {
+            closes.incrementAndGet();
+          }
         })
         .retryPolicy(D1RetryPolicy.none())
         .build();
 
-    client.queryAsync("SELECT 1").get(1, TimeUnit.SECONDS);
+    try {
+      CompletableFuture<D1Result> accepted = client.queryAsync("SELECT 1");
+      assertThat(requestStarted.await(1, TimeUnit.SECONDS)).isTrue();
 
-    assertThat(worker.get().getName()).startsWith("cloudflare-d1-async-");
-    assertThat(worker.get().isDaemon()).isTrue();
+      assertThat(worker.get().getName()).startsWith("cloudflare-d1-async-");
+      assertThat(worker.get().isDaemon()).isTrue();
 
-    client.close();
+      client.close();
+
+      assertThat(accepted).isNotDone();
+      assertThat(closes).hasValue(0);
+      assertClosedFailure(client.queryAsync("SELECT 2"));
+
+      finishRequest.countDown();
+
+      assertThat(accepted.get(1, TimeUnit.SECONDS).success()).isTrue();
+      assertThat(closes).hasValue(1);
+    } finally {
+      finishRequest.countDown();
+      client.close();
+    }
+  }
+
+  @Test
+  void rejectingCallerExecutorFailsWithRejectedExecutionExceptionWhileClientIsOpen() {
+    AtomicInteger closes = new AtomicInteger();
+    Executor rejectingExecutor = command -> {
+      throw new RejectedExecutionException("executor rejected the operation");
+    };
+    D1AsyncClient client = lifecycleClient(rejectingExecutor, successfulTransport(closes));
 
     assertThatThrownBy(() -> client.queryAsync("SELECT 1").join())
         .isInstanceOf(CompletionException.class)
-        .hasCauseInstanceOf(RejectedExecutionException.class);
+        .hasCauseInstanceOf(RejectedExecutionException.class)
+        .hasRootCauseMessage("executor rejected the operation");
+
+    client.close();
+    assertThat(closes).hasValue(1);
+  }
+
+  @Test
+  void deferredTransportCloseFailureFailsTheLastAcceptedFuture() {
+    ManualExecutor executor = new ManualExecutor();
+    IllegalStateException closeFailure = new IllegalStateException("transport close failed");
+    D1Transport transport = new D1Transport() {
+      @Override
+      public D1TransportResponse send(D1TransportRequest request) {
+        return new D1TransportResponse(200, Collections.emptyMap(), selectBody("[]", metaBody()));
+      }
+
+      @Override
+      public void close() {
+        throw closeFailure;
+      }
+    };
+    D1AsyncClient client = lifecycleClient(executor, transport);
+
+    CompletableFuture<D1Result> accepted = client.queryAsync("SELECT 1");
+    client.close();
+    executor.runQueuedTask();
+
+    assertThatThrownBy(accepted::join)
+        .isInstanceOf(CompletionException.class)
+        .hasCause(closeFailure);
+  }
+
+  @Test
+  void operationCompletionExceptionIsNotWrappedAgain() {
+    ManualExecutor executor = new ManualExecutor();
+    CompletionException operationFailure =
+        new CompletionException(new IllegalStateException("operation failed"));
+    D1Transport transport = request -> {
+      throw operationFailure;
+    };
+    D1AsyncClient client = lifecycleClient(executor, transport);
+
+    CompletableFuture<D1Result> accepted = client.queryAsync("SELECT 1");
+    executor.runQueuedTask();
+
+    assertThatThrownBy(accepted::join).isSameAs(operationFailure);
+    client.close();
+  }
+
+  @Test
+  void deferredCloseCompletionExceptionIsNotWrappedAgain() {
+    ManualExecutor executor = new ManualExecutor();
+    CompletionException closeFailure =
+        new CompletionException(new IllegalStateException("transport close failed"));
+    D1Transport transport = new D1Transport() {
+      @Override
+      public D1TransportResponse send(D1TransportRequest request) {
+        return new D1TransportResponse(200, Collections.emptyMap(), selectBody("[]", metaBody()));
+      }
+
+      @Override
+      public void close() {
+        throw closeFailure;
+      }
+    };
+    D1AsyncClient client = lifecycleClient(executor, transport);
+
+    CompletableFuture<D1Result> accepted = client.queryAsync("SELECT 1");
+    client.close();
+    executor.runQueuedTask();
+
+    assertThatThrownBy(accepted::join).isSameAs(closeFailure);
+  }
+
+  @Test
+  void deferredTransportCloseFailureIsSuppressedBehindOperationFailure() {
+    ManualExecutor executor = new ManualExecutor();
+    IllegalStateException closeFailure = new IllegalStateException("transport close failed");
+    D1Transport transport = new D1Transport() {
+      @Override
+      public D1TransportResponse send(D1TransportRequest request) throws IOException {
+        throw new IOException("request failed");
+      }
+
+      @Override
+      public void close() {
+        throw closeFailure;
+      }
+    };
+    D1AsyncClient client = lifecycleClient(executor, transport);
+
+    CompletableFuture<D1Result> accepted = client.queryAsync("SELECT 1");
+    client.close();
+    executor.runQueuedTask();
+
+    assertThatThrownBy(accepted::join)
+        .isInstanceOf(CompletionException.class)
+        .cause()
+        .isInstanceOf(D1TransportException.class)
+        .satisfies(failure -> assertThat(failure.getSuppressed()).containsExactly(closeFailure));
   }
 
   @Test
@@ -340,6 +558,14 @@ class D1AsyncClientTest {
     }
   }
 
+  private void assertClosedFailure(CompletableFuture<?> future) {
+    assertThatThrownBy(future::join)
+        .isInstanceOf(CompletionException.class)
+        .cause()
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessage("D1AsyncClient is closed");
+  }
+
   private D1AsyncClient testClient() {
     return testClient(Runnable::run);
   }
@@ -353,6 +579,87 @@ class D1AsyncClientTest {
         .retryPolicy(D1RetryPolicy.none())
         .executor(executor)
         .build();
+  }
+
+  private D1AsyncClient lifecycleClient(Executor executor, D1Transport transport) {
+    return D1AsyncClient.builder()
+        .accountId("test-account-id")
+        .databaseId("test-database-id")
+        .apiToken("test-token")
+        .baseUrl("https://example.com/client/v4")
+        .transport(transport)
+        .retryPolicy(D1RetryPolicy.none())
+        .executor(executor)
+        .build();
+  }
+
+  private D1Transport successfulTransport(AtomicInteger closes) {
+    return new D1Transport() {
+      @Override
+      public D1TransportResponse send(D1TransportRequest request) {
+        return new D1TransportResponse(200, Collections.emptyMap(), selectBody("[]", metaBody()));
+      }
+
+      @Override
+      public void close() {
+        closes.incrementAndGet();
+      }
+    };
+  }
+
+  private static final class ManualExecutor implements Executor {
+    private final Queue<Runnable> queuedTasks = new ArrayDeque<>();
+
+    @Override
+    public void execute(Runnable command) {
+      queuedTasks.add(command);
+    }
+
+    boolean hasQueuedTask() {
+      return !queuedTasks.isEmpty();
+    }
+
+    void runQueuedTask() {
+      Runnable task = queuedTasks.poll();
+      if (task == null) {
+        throw new IllegalStateException("no task is queued");
+      }
+      task.run();
+    }
+  }
+
+  private static final class BlockingAcceptanceExecutor implements Executor {
+    private final CountDownLatch acceptanceStarted = new CountDownLatch(1);
+    private final CountDownLatch finishAcceptance = new CountDownLatch(1);
+    private final AtomicReference<Runnable> acceptedTask = new AtomicReference<>();
+
+    @Override
+    public void execute(Runnable command) {
+      acceptedTask.set(command);
+      acceptanceStarted.countDown();
+      try {
+        finishAcceptance.await();
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        throw new RejectedExecutionException("executor acceptance was interrupted", e);
+      }
+    }
+
+    boolean awaitAcceptance() throws InterruptedException {
+      return acceptanceStarted.await(1, TimeUnit.SECONDS);
+    }
+
+    void finishAcceptance() {
+      finishAcceptance.countDown();
+    }
+
+    void runAcceptedTask() {
+      Runnable task = acceptedTask.getAndSet(null);
+      if (task == null) {
+        throw new IllegalStateException("no task was accepted");
+      }
+      task.run();
+    }
   }
 
 }
