@@ -6,14 +6,6 @@ This project follows Semantic Versioning.
 
 ## [Unreleased]
 
-### Added
-
-- Added `D1RawBatchException` with the first failed item index and immutable partial raw results for item-level raw batch failures.
-
-### Fixed
-
-- Invalid JSON responses with successful HTTP status codes now retain the attempted operation in exception metadata.
-
 ## [0.2.0] - 2026-07-11
 
 See the [migration guide](docs/guides/migration-0.2.md) for upgrade steps from 0.1.x.
