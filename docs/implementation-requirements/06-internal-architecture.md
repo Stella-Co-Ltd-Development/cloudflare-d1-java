@@ -121,6 +121,7 @@ Responsibilities:
 - Map HTTP status and D1 response failures to public exceptions
 - Preserve status code, raw body, errors, and messages
 - Create `D1BatchException` for batch partial failures
+- Create `D1RawBatchException` for raw batch item failures
 - Ensure sensitive values are not included in exception messages
 
 ## D1Version

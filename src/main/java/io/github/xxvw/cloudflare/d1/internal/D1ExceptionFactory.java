@@ -7,6 +7,7 @@ import io.github.xxvw.cloudflare.d1.D1AuthorizationException;
 import io.github.xxvw.cloudflare.d1.D1BatchException;
 import io.github.xxvw.cloudflare.d1.D1Operation;
 import io.github.xxvw.cloudflare.d1.D1QueryException;
+import io.github.xxvw.cloudflare.d1.D1RawBatchException;
 import io.github.xxvw.cloudflare.d1.D1RawResult;
 import io.github.xxvw.cloudflare.d1.D1RateLimitException;
 import io.github.xxvw.cloudflare.d1.D1ResponseInfo;
@@ -110,21 +111,25 @@ public final class D1ExceptionFactory {
         results);
   }
 
-  public D1ApiException rawBatchFailure(int statusCode, String rawBody, List<D1RawResult> results) {
-    D1RawResult failed = null;
-    for (D1RawResult result : results) {
-      if (!result.success()) {
-        failed = result;
+  public D1RawBatchException rawBatchFailure(
+      int statusCode,
+      String rawBody,
+      List<D1RawResult> results) {
+    int failedIndex = 0;
+    for (int i = 0; i < results.size(); i++) {
+      if (!results.get(i).success()) {
+        failedIndex = i;
         break;
       }
     }
-    return new D1ApiException(
-        "D1 raw batch failed",
-        D1Operation.RAW_BATCH,
+    D1RawResult failed = results.isEmpty() ? null : results.get(failedIndex);
+    return new D1RawBatchException(
         statusCode,
         rawBody,
         failed == null ? Collections.<D1ResponseInfo>emptyList() : failed.errors(),
-        failed == null ? Collections.<D1ResponseInfo>emptyList() : failed.messages());
+        failed == null ? Collections.<D1ResponseInfo>emptyList() : failed.messages(),
+        failedIndex,
+        results);
   }
 
   private D1ApiException statusException(

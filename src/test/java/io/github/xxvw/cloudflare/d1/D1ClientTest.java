@@ -188,6 +188,36 @@ class D1ClientTest {
   }
 
   @Test
+  void invalidJsonResponsesExposeTheAttemptedOperationAndKeepMessagesSanitized() {
+    String sensitiveBody = "not-json test-token sensitive-param";
+    for (int i = 0; i < 5; i++) {
+      server.enqueue(ok(sensitiveBody));
+    }
+    D1Client client = testClient();
+
+    assertInvalidJsonOperation(
+        () -> client.query("SELECT * FROM users WHERE secret = ?", "sensitive-param"),
+        D1Operation.QUERY,
+        sensitiveBody);
+    assertInvalidJsonOperation(
+        () -> client.execute("UPDATE users SET secret = ?", "sensitive-param"),
+        D1Operation.EXECUTE,
+        sensitiveBody);
+    assertInvalidJsonOperation(
+        () -> client.batch(D1Query.of("SELECT ?", "sensitive-param")),
+        D1Operation.BATCH,
+        sensitiveBody);
+    assertInvalidJsonOperation(
+        () -> client.raw("SELECT ?", "sensitive-param"),
+        D1Operation.RAW,
+        sensitiveBody);
+    assertInvalidJsonOperation(
+        () -> client.rawBatch(D1Query.of("SELECT ?", "sensitive-param")),
+        D1Operation.RAW_BATCH,
+        sensitiveBody);
+  }
+
+  @Test
   void responseMessagesAndBatchListResultsAreImmutable() {
     server.enqueue(ok("{\"success\":true,\"result\":[{\"success\":true,\"results\":[],\"meta\":{},"
         + "\"messages\":[{\"code\":10,\"message\":\"item\"}]}],"
@@ -407,16 +437,51 @@ class D1ClientTest {
     server.enqueue(ok("{\"success\":true,\"result\":[{\"success\":false,"
         + "\"results\":{\"columns\":[],\"rows\":[]},\"errors\":[{\"code\":2,\"message\":\"raw\"}]}],"
         + "\"errors\":[],\"messages\":[]}"));
-    server.enqueue(ok("{\"success\":true,\"result\":[{\"success\":false,"
-        + "\"results\":{\"columns\":[],\"rows\":[]},\"errors\":[{\"code\":3,\"message\":\"batch\"}]}],"
-        + "\"errors\":[],\"messages\":[]}"));
+    server.enqueue(ok("{\"success\":true,\"result\":["
+        + "{\"success\":true,\"results\":{\"columns\":[\"value\"],\"rows\":[[1]]}},"
+        + "{\"success\":false,\"results\":{\"columns\":[],\"rows\":[]},"
+        + "\"errors\":[{\"code\":3,\"message\":\"test-token\"}],"
+        + "\"messages\":[{\"code\":4,\"message\":\"sensitive-param\"}]},"
+        + "{\"success\":false,\"results\":{\"columns\":[],\"rows\":[]},"
+        + "\"errors\":[{\"code\":5,\"message\":\"later\"}]}"
+        + "],\"errors\":[],\"messages\":[]}"));
     D1Client client = testClient();
 
     assertThatThrownBy(() -> client.raw("SELECT 1")).isInstanceOf(D1ApiException.class);
     assertThatThrownBy(() -> client.raw("SELECT 1")).isInstanceOf(D1QueryException.class);
     assertThatThrownBy(() -> client.rawBatch(D1Query.of("SELECT 1")))
+        .isInstanceOfSatisfying(D1RawBatchException.class, exception -> {
+          assertThat(exception.operation()).contains(D1Operation.RAW_BATCH);
+          assertThat(exception.statusCode()).hasValue(200);
+          assertThat(exception.failedIndex()).isEqualTo(1);
+          assertThat(exception.partialResults()).hasSize(3);
+          assertThat(exception.partialResults().get(0).success()).isTrue();
+          assertThat(exception.errors()).extracting(D1ResponseInfo::code).containsExactly(3);
+          assertThat(exception.messages()).extracting(D1ResponseInfo::code).containsExactly(4);
+          assertThat(exception.getMessage())
+              .isEqualTo("D1 raw batch failed")
+              .doesNotContain("test-token")
+              .doesNotContain("sensitive-param");
+        });
+  }
+
+  @Test
+  void rawBatchHttpAndTopLevelFailuresKeepExistingExceptionMapping() {
+    server.enqueue(jsonError(401));
+    server.enqueue(ok("{\"success\":false,"
+        + "\"errors\":[{\"code\":1,\"message\":\"top\"}],\"messages\":[]}"));
+    D1Client client = testClient();
+
+    assertThatThrownBy(() -> client.rawBatch(D1Query.of("SELECT 1")))
+        .isExactlyInstanceOf(D1AuthenticationException.class)
         .isInstanceOfSatisfying(D1ApiException.class,
-            exception -> assertThat(exception.getMessage()).isEqualTo("D1 raw batch failed"));
+            exception -> assertThat(exception.operation()).contains(D1Operation.RAW_BATCH));
+    assertThatThrownBy(() -> client.rawBatch(D1Query.of("SELECT 1")))
+        .isExactlyInstanceOf(D1ApiException.class)
+        .isInstanceOfSatisfying(D1ApiException.class, exception -> {
+          assertThat(exception.operation()).contains(D1Operation.RAW_BATCH);
+          assertThat(exception.errors()).extracting(D1ResponseInfo::code).containsExactly(1);
+        });
   }
 
   @Test
@@ -610,6 +675,24 @@ class D1ClientTest {
         .baseUrl(server.url("/client/v4").uri())
         .retryPolicy(retryPolicy)
         .build();
+  }
+
+  private static void assertInvalidJsonOperation(
+      Runnable operation,
+      D1Operation expectedOperation,
+      String sensitiveBody) {
+    assertThatThrownBy(operation::run)
+        .isExactlyInstanceOf(D1ApiException.class)
+        .isInstanceOfSatisfying(D1ApiException.class, exception -> {
+          assertThat(exception.operation()).contains(expectedOperation);
+          assertThat(exception.statusCode()).hasValue(200);
+          assertThat(exception.rawBody()).contains(sensitiveBody);
+          assertThat(exception.getMessage())
+              .isEqualTo("D1 API response was not valid JSON")
+              .doesNotContain("test-token")
+              .doesNotContain("sensitive-param")
+              .doesNotContain("SELECT");
+        });
   }
 
 }

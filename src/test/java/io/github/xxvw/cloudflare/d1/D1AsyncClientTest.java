@@ -272,17 +272,26 @@ class D1AsyncClientTest {
   @Test
   void executeAndRawBatchAsyncFailuresPropagatePublicExceptions() {
     server.enqueue(jsonError(500));
-    server.enqueue(ok("{\"success\":true,\"result\":[{\"success\":false,"
-        + "\"results\":{\"columns\":[],\"rows\":[]},\"errors\":[{\"code\":3,\"message\":\"batch\"}]}],"
-        + "\"errors\":[],\"messages\":[]}"));
+    server.enqueue(ok("{\"success\":true,\"result\":["
+        + "{\"success\":true,\"results\":{\"columns\":[\"value\"],\"rows\":[[1]]}},"
+        + "{\"success\":false,\"results\":{\"columns\":[],\"rows\":[]},"
+        + "\"errors\":[{\"code\":3,\"message\":\"batch\"}]}"
+        + "],\"errors\":[],\"messages\":[]}"));
     D1AsyncClient client = testClient();
 
     assertThatThrownBy(() -> client.executeAsync("UPDATE users SET active = ?", false).join())
         .isInstanceOf(CompletionException.class)
         .hasCauseInstanceOf(D1ApiException.class);
-    assertThatThrownBy(() -> client.rawBatchAsync(D1Query.of("SELECT 1")).join())
+    CompletableFuture<List<D1RawResult>> rawBatchFailure =
+        client.rawBatchAsync(D1Query.of("SELECT 1"), D1Query.of("SELECT 2"));
+    assertThatThrownBy(rawBatchFailure::join)
         .isInstanceOf(CompletionException.class)
-        .hasCauseInstanceOf(D1ApiException.class);
+        .hasCauseInstanceOf(D1RawBatchException.class);
+    D1RawBatchException cause =
+        (D1RawBatchException) rawBatchFailure.handle((value, error) -> error.getCause()).join();
+    assertThat(cause.failedIndex()).isEqualTo(1);
+    assertThat(cause.partialResults()).hasSize(2);
+    assertThat(cause.errors()).extracting(D1ResponseInfo::code).containsExactly(3);
   }
 
   @Test

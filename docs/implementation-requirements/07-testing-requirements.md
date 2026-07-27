@@ -102,6 +102,7 @@ Required cases:
 
 - Rows list is immutable
 - Row map is immutable
+- Nested JSON maps and lists are immutable and defensively copied
 - Messages list is immutable
 - Errors list is immutable
 - additionalProperties map is immutable
@@ -164,8 +165,9 @@ Error tests:
 - HTTP 200 with top-level `success=false` throws D1 exception
 - Query result `success=false` throws `D1QueryException`
 - Batch partial failure throws `D1BatchException`
+- Raw batch item failure throws `D1RawBatchException`
 - Non-JSON error body is preserved in `rawBody()`
-- JSON parse failure throws `D1ApiException`
+- JSON parse failure throws `D1ApiException` with the attempted operation
 - Network failure throws `D1TransportException`
 - Timeout throws `D1TimeoutException`
 

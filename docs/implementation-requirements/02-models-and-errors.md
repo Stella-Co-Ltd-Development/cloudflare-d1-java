@@ -44,6 +44,7 @@ Rules:
 - Missing `results` means empty rows.
 - `rows()` must return an immutable list.
 - Each row map must be immutable.
+- Nested JSON maps and lists in rows must be recursively immutable and defensively copied.
 - `firstRow()` must return an immutable map if present.
 - `messages()` and `errors()` must return immutable lists.
 - `rawBody()` must contain the raw HTTP response body.
@@ -99,6 +100,8 @@ timings = Optional.empty()
 ```
 
 Unknown meta fields must be preserved in `additionalProperties()`.
+Nested JSON maps and lists in `additionalProperties()` must be recursively immutable and
+defensively copied.
 
 ## D1Timings
 
@@ -145,7 +148,8 @@ D1Exception
  │   ├─ D1AuthorizationException
  │   ├─ D1RateLimitException
  │   ├─ D1QueryException
- │   └─ D1BatchException
+ │   ├─ D1BatchException
+ │   └─ D1RawBatchException
  ├─ D1MappingException
  ├─ D1TimeoutException
  └─ D1TransportException
@@ -214,6 +218,23 @@ Rules:
 - `failedIndex()` returns the first failed result index.
 - `partialResults()` must be immutable.
 
+## D1RawBatchException
+
+Required API:
+
+```java
+public int failedIndex();
+
+public List<D1RawResult> partialResults();
+```
+
+Rules:
+
+- `failedIndex()` returns the first failed raw result index.
+- `partialResults()` must be immutable.
+- Only item-level raw batch failures use `D1RawBatchException`; HTTP and top-level API failures keep
+  their normal status-based exception mapping.
+
 ## D1MappingException
 
 Required API:
@@ -228,7 +249,7 @@ public Map<String, Object> row();
 
 Rules:
 
-- `row()` must be immutable.
+- `row()` and its nested JSON maps and lists must be immutable and defensively copied.
 - Default exception message must not include row contents.
 
 ## Error Mapping
@@ -242,6 +263,7 @@ Rules:
 - HTTP 2xx with top-level `success=false`: `D1ApiException` family
 - Query result `success=false`: `D1QueryException`
 - Batch result with any failed item: `D1BatchException`
+- Raw batch result with any failed item: `D1RawBatchException`
 - Network failure: `D1TransportException`
 - Timeout: `D1TimeoutException`
 - Non-JSON error body: `D1ApiException` with `rawBody()`
