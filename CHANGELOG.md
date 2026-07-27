@@ -8,6 +8,8 @@ This project follows Semantic Versioning.
 
 ### Added
 
+- Added `D1RawBatchException` with the first failed item index and immutable partial raw results for
+  item-level raw batch failures.
 - Added `D1Client.builderFromEnv()` and `D1AsyncClient.builderFromEnv()` so standard environment
   credentials can be combined with timeout, retry, transport, mapping, and executor configuration.
 
@@ -19,6 +21,13 @@ This project follows Semantic Versioning.
 
 ### Fixed
 
+- Made nested JSON maps and lists in public response and mapping-error models recursively immutable
+  and defensively copied.
+- Invalid JSON responses with successful HTTP status codes now retain the attempted operation in
+  exception metadata.
+- `D1AsyncClient.close()` now allows accepted queued and in-flight operations to finish before
+  closing the transport, rejects all post-close operations consistently, and leaves caller-supplied
+  executors open.
 - Preserved positive sub-millisecond default transport timeouts by rounding them up to one
   millisecond, while keeping zero unlimited and safely capping oversized durations.
 - Added the missing Maven `compile` phase to parameterized quickstart commands.
