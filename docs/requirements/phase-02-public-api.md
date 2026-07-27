@@ -20,6 +20,10 @@ Environment-based creation:
 
 ```java
 D1Client client = D1Client.fromEnv();
+D1ClientBuilder builder = D1Client.builderFromEnv();
+
+D1AsyncClient asyncClient = D1AsyncClient.fromEnv();
+D1AsyncClientBuilder asyncBuilder = D1AsyncClient.builderFromEnv();
 ```
 
 Required environment variables:
@@ -29,6 +33,10 @@ CLOUDFLARE_ACCOUNT_ID
 D1_DATABASE_ID
 CLOUDFLARE_API_TOKEN
 ```
+
+Missing or blank environment variables must throw `IllegalStateException`. `fromEnv()` is
+equivalent to `builderFromEnv().build()`, while the builder entry points allow optional timeout,
+retry, transport, typed mapping, and async executor configuration.
 
 ## Query API
 
@@ -84,15 +92,11 @@ public List<D1Result> batch(List<D1Query> queries);
 public List<D1Result> batch(D1Query... queries);
 ```
 
-## Preview Async API
+## Async API
 
 ```java
-@Deprecated(since = "0.1.0", forRemoval = false)
-public CompletableFuture<D1Result> queryAsync(String sql, Object... params);
-
-@Deprecated(since = "0.1.0", forRemoval = false)
-public CompletableFuture<D1Result> executeAsync(String sql, Object... params);
-
-@Deprecated(since = "0.1.0", forRemoval = false)
-public CompletableFuture<List<D1Result>> batchAsync(List<D1Query> queries);
+public final class D1AsyncClient implements AutoCloseable
 ```
+
+`D1AsyncClient` provides future-returning equivalents of the synchronous query, execute, batch,
+raw, and typed mapping APIs. Caller-supplied executors remain caller-owned.

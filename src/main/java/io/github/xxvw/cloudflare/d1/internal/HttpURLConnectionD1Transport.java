@@ -15,6 +15,8 @@ import java.util.List;
 import java.util.Map;
 
 public final class HttpURLConnectionD1Transport implements D1Transport {
+  private static final Duration MAX_TIMEOUT = Duration.ofMillis(Integer.MAX_VALUE);
+
   private final Duration connectTimeout;
 
   public HttpURLConnectionD1Transport(Duration connectTimeout) {
@@ -54,15 +56,15 @@ public final class HttpURLConnectionD1Transport implements D1Transport {
     }
   }
 
-  private static int timeoutMillis(Duration timeout) {
-    if (timeout == null) {
+  static int timeoutMillis(Duration timeout) {
+    if (timeout == null || timeout.isZero()) {
       return 0;
     }
-    long millis = timeout.toMillis();
-    if (millis > Integer.MAX_VALUE) {
+    if (timeout.compareTo(MAX_TIMEOUT) >= 0) {
       return Integer.MAX_VALUE;
     }
-    return (int) millis;
+    long millis = timeout.toMillis();
+    return millis == 0 && !timeout.isNegative() ? 1 : (int) millis;
   }
 
   private static String readBody(InputStream input) throws IOException {

@@ -22,6 +22,10 @@ Environment-based creation:
 
 ```java
 D1Client client = D1Client.fromEnv();
+D1ClientBuilder builder = D1Client.builderFromEnv();
+
+D1AsyncClient asyncClient = D1AsyncClient.fromEnv();
+D1AsyncClientBuilder asyncBuilder = D1AsyncClient.builderFromEnv();
 ```
 
 Environment variables:
@@ -32,7 +36,12 @@ D1_DATABASE_ID
 CLOUDFLARE_API_TOKEN
 ```
 
-If an environment variable is missing or blank, `fromEnv()` must throw `IllegalStateException`.
+If an environment variable is missing or blank, `fromEnv()` and `builderFromEnv()` must throw
+`IllegalStateException`.
+
+`fromEnv()` must be equivalent to `builderFromEnv().build()`. The returned builders must accept all
+normal optional configuration, including timeout, retry policy, transport, mapping `ObjectMapper`,
+and async executor settings.
 
 The repository must include a tracked `.env.example` file with these variable names so contributors
 can create a local ignored `.env` file for manual testing. `.env` files must remain ignored and must
@@ -81,6 +90,15 @@ requestTimeout = 30 seconds
 retryPolicy = D1RetryPolicy.defaultPolicy()
 userAgent = cloudflare-d1-java/{version}
 ```
+
+Timeout behavior for the default transport:
+
+- `connectTimeout` controls connection establishment.
+- `requestTimeout` is applied as the `HttpURLConnection` read timeout.
+- `Duration.ZERO` disables the corresponding timeout.
+- Positive values below one millisecond are rounded up to one millisecond.
+- Values at or above `Integer.MAX_VALUE` milliseconds are capped without overflow.
+- Custom transports receive the configured request duration unchanged.
 
 ## D1Query
 
@@ -174,5 +192,8 @@ Rules:
 ## Async API
 
 The deprecated preview async methods on `D1Client` (`queryAsync`, `executeAsync`, `batchAsync`) were removed in v0.2.0. `D1AsyncClient` is the supported asynchronous entry point.
+
+`D1AsyncClient.builderFromEnv()` must return a fully configurable `D1AsyncClientBuilder`. A
+caller-supplied executor remains caller-owned.
 
 Async failures must complete the future exceptionally.

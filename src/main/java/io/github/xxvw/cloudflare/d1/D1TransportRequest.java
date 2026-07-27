@@ -78,7 +78,11 @@ public final class D1TransportRequest {
   }
 
   /**
-   * Request timeout.
+   * Request timeout supplied by the client builder.
+   *
+   * <p>{@link Duration#ZERO} means no timeout. The default transport uses this value as a read
+   * timeout; custom transports should enforce it where their HTTP stack supports request
+   * timeouts.
    *
    * @return request timeout
    */

@@ -12,12 +12,24 @@ For latency-sensitive application traffic, consider putting a Cloudflare Worker 
 - Do not log `Authorization` headers.
 - Do not include account IDs, database IDs, tokens, customer data, or production SQL data in public issues.
 
-The built-in `fromEnv()` helpers read:
+The built-in `fromEnv()` and `builderFromEnv()` helpers read:
 
 ```text
 CLOUDFLARE_ACCOUNT_ID
 D1_DATABASE_ID
 CLOUDFLARE_API_TOKEN
+```
+
+Use `fromEnv()` for defaults, or start from `builderFromEnv()` to retain these credential conventions
+while configuring timeouts, retry behavior, a custom transport, typed mapping, or an async executor:
+
+```java
+try (D1Client d1 = D1Client.builderFromEnv()
+    .requestTimeout(Duration.ofSeconds(45))
+    .retryPolicy(D1RetryPolicy.none())
+    .build()) {
+  D1Result result = d1.query("SELECT 1 AS value");
+}
 ```
 
 ## Retry Policy
@@ -36,6 +48,12 @@ See [Retry Policy](retry-policy.md) for configuration examples.
 ## Timeouts and Failure Handling
 
 Configure timeouts based on the job type. Short interactive jobs usually need lower timeouts than background maintenance jobs.
+
+With the default transport, `connectTimeout` limits connection establishment and `requestTimeout`
+is used as the `HttpURLConnection` read timeout. `Duration.ZERO` disables the corresponding
+timeout. Positive sub-millisecond values are rounded up to one millisecond, and values beyond the
+`HttpURLConnection` integer-millisecond range are capped. Custom transports receive the configured
+request duration through `D1TransportRequest.timeout()` and are responsible for enforcing it.
 
 Handle these exception categories separately:
 

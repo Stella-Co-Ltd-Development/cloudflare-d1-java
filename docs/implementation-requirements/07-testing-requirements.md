@@ -96,6 +96,26 @@ Required cases:
 - Reject blank base URL
 - Reject invalid URI string
 
+## Environment Builder Tests
+
+Required cases:
+
+- Missing and blank standard environment values throw `IllegalStateException`
+- `D1Client.fromEnv()` delegates to an environment-backed builder
+- Environment-backed sync builders accept timeout, retry, custom transport, and mapping settings
+- Environment-backed async builders accept a caller-supplied executor
+- Tests use only fake account IDs, database IDs, and tokens
+
+## Default Transport Timeout Tests
+
+Required cases:
+
+- Zero maps to unlimited (`0`)
+- Positive sub-millisecond values map to one millisecond
+- Normal millisecond values are preserved
+- Values at or above `Integer.MAX_VALUE` milliseconds are capped
+- Huge `Duration` values do not overflow during conversion
+
 ## D1Result and D1Meta Tests
 
 Required cases:

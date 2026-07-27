@@ -18,6 +18,25 @@ D1Client d1 = D1Client.builder()
 D1Client d1 = D1Client.fromEnv();
 ```
 
+## Customize a Client from Environment
+
+```java
+D1Client d1 = D1Client.builderFromEnv()
+    .connectTimeout(Duration.ofSeconds(10))
+    .requestTimeout(Duration.ofSeconds(45))
+    .retryPolicy(D1RetryPolicy.none())
+    .build();
+```
+
+## Customize an Async Client from Environment
+
+```java
+D1AsyncClient d1 = D1AsyncClient.builderFromEnv()
+    .requestTimeout(Duration.ofSeconds(45))
+    .executor(executor)
+    .build();
+```
+
 ## Query
 
 ```java

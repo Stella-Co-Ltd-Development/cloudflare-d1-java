@@ -64,21 +64,39 @@ public final class D1AsyncClient implements AutoCloseable {
   }
 
   /**
+   * Creates an async builder initialized from the standard environment variables.
+   *
+   * <p>The required variables are {@code CLOUDFLARE_ACCOUNT_ID}, {@code D1_DATABASE_ID}, and
+   * {@code CLOUDFLARE_API_TOKEN}. Optional settings such as timeouts, retries, transports, typed
+   * row mapping, and the executor can be customized on the returned builder before calling {@link
+   * D1AsyncClientBuilder#build()}.
+   *
+   * @return an async client builder initialized from environment variables
+   * @throws IllegalStateException if any required variable is missing or blank
+   */
+  public static D1AsyncClientBuilder builderFromEnv() {
+    return builderFromEnv(System::getenv);
+  }
+
+  static D1AsyncClientBuilder builderFromEnv(Function<String, String> env) {
+    return new D1AsyncClientBuilder(D1Client.builderFromEnv(env));
+  }
+
+  /**
    * Creates an async client from the standard environment variables.
    *
    * <p>The required variables are {@code CLOUDFLARE_ACCOUNT_ID}, {@code D1_DATABASE_ID}, and
-   * {@code CLOUDFLARE_API_TOKEN}.
+   * {@code CLOUDFLARE_API_TOKEN}. This is equivalent to {@code builderFromEnv().build()}.
    *
    * @return an async client configured from environment variables
    * @throws IllegalStateException if any required variable is missing or blank
    */
   public static D1AsyncClient fromEnv() {
-    return fromEnv(System::getenv);
+    return builderFromEnv().build();
   }
 
   static D1AsyncClient fromEnv(Function<String, String> env) {
-    ExecutorService owned = D1AsyncClientBuilder.newOwnedExecutor();
-    return new D1AsyncClient(D1Client.fromEnv(env), owned, owned);
+    return builderFromEnv(env).build();
   }
 
   /**

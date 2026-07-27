@@ -22,8 +22,8 @@ import java.util.function.Function;
 /**
  * Synchronous client for the Cloudflare D1 REST API.
  *
- * <p>Create instances with {@link #builder()} or {@link #fromEnv()}. Instances are closeable to
- * prevent accidental reuse after application shutdown.
+ * <p>Create instances with {@link #builder()}, {@link #builderFromEnv()}, or {@link #fromEnv()}.
+ * Instances are closeable to prevent accidental reuse after application shutdown.
  *
  * <p>Query operations ({@code query}, {@code queryFirst}, {@code raw}) are retried by default and
  * must be used for reads only: a retried statement can reach the server more than once
@@ -83,24 +83,43 @@ public final class D1Client implements AutoCloseable {
   }
 
   /**
+   * Creates a builder initialized from the standard environment variables.
+   *
+   * <p>The required variables are {@code CLOUDFLARE_ACCOUNT_ID}, {@code D1_DATABASE_ID}, and
+   * {@code CLOUDFLARE_API_TOKEN}. Optional settings such as timeouts, retries, transports, and
+   * typed row mapping can be customized on the returned builder before calling {@link
+   * D1ClientBuilder#build()}.
+   *
+   * @return a client builder initialized from environment variables
+   * @throws IllegalStateException if any required variable is missing or blank
+   */
+  public static D1ClientBuilder builderFromEnv() {
+    return builderFromEnv(System::getenv);
+  }
+
+  static D1ClientBuilder builderFromEnv(Function<String, String> env) {
+    Objects.requireNonNull(env, "env must not be null");
+    return builder()
+        .accountId(requireEnv(env, ENV_ACCOUNT_ID))
+        .databaseId(requireEnv(env, ENV_DATABASE_ID))
+        .apiToken(requireEnv(env, ENV_API_TOKEN));
+  }
+
+  /**
    * Creates a client from the standard environment variables.
    *
    * <p>The required variables are {@code CLOUDFLARE_ACCOUNT_ID}, {@code D1_DATABASE_ID}, and
-   * {@code CLOUDFLARE_API_TOKEN}.
+   * {@code CLOUDFLARE_API_TOKEN}. This is equivalent to {@code builderFromEnv().build()}.
    *
    * @return a client configured from environment variables
    * @throws IllegalStateException if any required variable is missing or blank
    */
   public static D1Client fromEnv() {
-    return fromEnv(System::getenv);
+    return builderFromEnv().build();
   }
 
   static D1Client fromEnv(Function<String, String> env) {
-    return builder()
-        .accountId(requireEnv(env, ENV_ACCOUNT_ID))
-        .databaseId(requireEnv(env, ENV_DATABASE_ID))
-        .apiToken(requireEnv(env, ENV_API_TOKEN))
-        .build();
+    return builderFromEnv(env).build();
   }
 
   /**

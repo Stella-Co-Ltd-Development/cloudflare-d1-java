@@ -6,6 +6,36 @@ This project follows Semantic Versioning.
 
 ## [Unreleased]
 
+### Added
+
+- Added `D1RawBatchException` with the first failed item index and immutable partial raw results for
+  item-level raw batch failures.
+- Added `D1Client.builderFromEnv()` and `D1AsyncClient.builderFromEnv()` so standard environment
+  credentials can be combined with timeout, retry, transport, mapping, and executor configuration.
+
+### Changed
+
+- Made the quickstart dependency version overridable and added Java 17 CI coverage that compiles
+  all examples against the current project artifact and runs the credential-free custom transport
+  example.
+
+### Fixed
+
+- Made nested JSON maps and lists in public response and mapping-error models recursively immutable
+  and defensively copied.
+- Invalid JSON responses with successful HTTP status codes now retain the attempted operation in
+  exception metadata.
+- `D1AsyncClient.close()` now allows accepted queued and in-flight operations to finish before
+  closing the transport, rejects all post-close operations consistently, and leaves caller-supplied
+  executors open.
+- Preserved positive sub-millisecond default transport timeouts by rounding them up to one
+  millisecond, while keeping zero unlimited and safely capping oversized durations.
+- Added the missing Maven `compile` phase to parameterized quickstart commands.
+
+### Documentation
+
+- Added environment-backed builder, Gradle Kotlin DSL, PowerShell, and timeout behavior guidance.
+
 ## [0.2.0] - 2026-07-11
 
 See the [migration guide](docs/guides/migration-0.2.md) for upgrade steps from 0.1.x.
