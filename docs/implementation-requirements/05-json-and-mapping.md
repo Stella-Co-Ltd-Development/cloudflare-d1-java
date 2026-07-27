@@ -104,9 +104,8 @@ JSON array   -> List
 
 Rows may contain nested `Map` or `List` values.
 
-The outer rows list and each row map must be immutable.
-
-Deep immutability for nested values is not required in v0.1.0.
+The outer rows list, each row map, and nested JSON maps and lists must be immutable and
+defensively copied.
 
 ## Typed Mapping
 

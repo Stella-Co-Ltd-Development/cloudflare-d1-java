@@ -1,8 +1,8 @@
 package io.github.xxvw.cloudflare.d1;
 
+import io.github.xxvw.cloudflare.d1.internal.D1ImmutableValues;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -134,7 +134,7 @@ public final class D1Result {
     }
     List<Map<String, Object>> copy = new ArrayList<>(rows.size());
     for (Map<String, Object> row : rows) {
-      copy.add(Collections.unmodifiableMap(new LinkedHashMap<>(row)));
+      copy.add(D1ImmutableValues.immutableMap(row));
     }
     return Collections.unmodifiableList(copy);
   }
