@@ -63,3 +63,41 @@ jobs:
 
       - name: Verify release artifacts
         run: mvn -B -Prelease -Dgpg.skip=true verify
+
+  examples:
+    name: Compile and run examples
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+
+      - name: Set up Java
+        uses: actions/setup-java@ad2b38190b15e4d6bdf0c97fb4fca8412226d287 # v5
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+
+      - name: Install current library
+        run: mvn -B -DskipTests install
+
+      - name: Read current project version
+        id: project-version
+        run: echo "version=$(mvn -q -DforceStdout help:evaluate -Dexpression=project.version)" >> "$GITHUB_OUTPUT"
+
+      - name: Compile examples
+        run: >-
+          mvn -B -f examples/quickstart/pom.xml
+          -Dcloudflare-d1-java.version=${{ steps.project-version.outputs.version }}
+          compile
+
+      - name: Run credential-free custom transport example
+        run: >-
+          mvn -B -f examples/quickstart/pom.xml
+          -Dcloudflare-d1-java.version=${{ steps.project-version.outputs.version }}
+          exec:java
+          -Dexec.mainClass=example.CustomTransportExample

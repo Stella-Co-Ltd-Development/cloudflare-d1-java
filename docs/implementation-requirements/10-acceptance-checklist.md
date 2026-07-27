@@ -4,6 +4,8 @@
 
 - [ ] `D1Client.builder()` works.
 - [ ] `D1Client.fromEnv()` works.
+- [ ] `D1Client.builderFromEnv()` remains configurable before `build()`.
+- [ ] `D1AsyncClient.builderFromEnv()` accepts custom executor configuration.
 - [ ] `.env.example` documents the variables required by `D1Client.fromEnv()`.
 - [ ] `query()` works with no params.
 - [ ] `query()` works with varargs params.
@@ -25,6 +27,7 @@
 - [ ] Request body for batch is correct.
 - [ ] `params: []` is sent when no params exist.
 - [ ] `rawBody()` is preserved.
+- [ ] Zero, sub-millisecond, and oversized default transport timeouts are converted safely.
 
 ## Validation
 
@@ -84,3 +87,5 @@
 - [ ] Javadocs build.
 - [ ] Sources jar builds.
 - [ ] Release profile signs artifacts.
+- [ ] Standalone examples compile against the current project version.
+- [ ] The credential-free custom transport example runs in CI.

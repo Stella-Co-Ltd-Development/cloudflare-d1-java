@@ -9,10 +9,7 @@ D1Transport transport = request -> {
   return new D1TransportResponse(200, Collections.emptyMap(), "{\"success\":true,\"result\":[]}");
 };
 
-D1Client client = D1Client.builder()
-    .accountId(System.getenv("CLOUDFLARE_ACCOUNT_ID"))
-    .databaseId(System.getenv("D1_DATABASE_ID"))
-    .apiToken(System.getenv("CLOUDFLARE_API_TOKEN"))
+D1Client client = D1Client.builderFromEnv()
     .transport(transport)
     .build();
 ```
@@ -21,7 +18,7 @@ D1Client client = D1Client.builder()
 
 - Return the HTTP status code, response headers, and response body exactly enough for the client to parse D1 responses.
 - Preserve the `Authorization`, `Content-Type`, `Accept`, and `User-Agent` headers from the request.
-- Respect `request.timeout()` where your HTTP stack supports it.
+- Respect `request.timeout()` where your HTTP stack supports it. `Duration.ZERO` means no timeout.
 - Do not log API tokens or authorization headers.
 
 The custom transport does not change JSON parsing, retry behavior, or exception mapping.

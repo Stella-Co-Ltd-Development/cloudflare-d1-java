@@ -85,14 +85,16 @@ Acceptance criteria:
 - Request body shape is correct.
 - Transport and timeout errors are mapped.
 
-## Task 11: Implement D1ClientBuilder and fromEnv
+## Task 11: Implement client builders and environment-backed builders
 
 Acceptance criteria:
 
 - Builder defaults work.
 - Required values are validated.
-- `fromEnv()` loads expected environment variables.
+- `fromEnv()` and `builderFromEnv()` load expected environment variables.
+- Environment-backed builders remain configurable before `build()`.
 - Missing env values throw `IllegalStateException`.
+- Sync and async environment-backed builders are covered by tests.
 
 ## Task 12: Implement Query and Execute
 
@@ -151,4 +153,6 @@ Acceptance criteria:
 - README examples are aligned with implemented API.
 - Limitations are documented.
 - Security notes are documented.
-- Async preview status is documented.
+- Sync and async environment-backed configuration is documented.
+- Maven, Gradle Groovy DSL, Gradle Kotlin DSL, POSIX shell, and PowerShell onboarding is documented.
+- Standalone examples compile against the current root project version in CI.

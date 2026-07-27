@@ -14,10 +14,16 @@
 
 Java 8 or newer is required.
 
-Gradle:
+Gradle Groovy DSL:
 
 ```groovy
 implementation "io.github.xxvw:cloudflare-d1-java:0.2.0"
+```
+
+Gradle Kotlin DSL:
+
+```kotlin
+implementation("io.github.xxvw:cloudflare-d1-java:0.2.0")
 ```
 
 ## Configure Credentials
@@ -32,6 +38,20 @@ $EDITOR .env
 set -a
 . ./.env
 set +a
+```
+
+PowerShell:
+
+```powershell
+Copy-Item .env.example .env
+notepad .env
+
+Get-Content .env | ForEach-Object {
+  if ($_ -match '^\s*([^#][^=]*)=(.*)$') {
+    [Environment]::SetEnvironmentVariable(
+      $matches[1].Trim(), $matches[2].Trim(), "Process")
+  }
+}
 ```
 
 Create the API token in the Cloudflare dashboard. For write operations, use an account-scoped D1 token with Edit permission. Store tokens outside source control and never paste production values into issues or logs.
@@ -56,6 +76,21 @@ public final class Example {
 }
 ```
 
+When you need optional settings, initialize a builder from the same variables and customize it
+before building:
+
+```java
+try (D1Client d1 = D1Client.builderFromEnv()
+    .connectTimeout(Duration.ofSeconds(10))
+    .requestTimeout(Duration.ofSeconds(45))
+    .retryPolicy(D1RetryPolicy.none())
+    .build()) {
+  D1Result result = d1.query("SELECT 1 AS value");
+}
+```
+
+`D1Client.fromEnv()` is equivalent to `D1Client.builderFromEnv().build()`.
+
 ## Run the Repository Example
 
 The repository includes a standalone Maven example that runs the same flow from environment variables.
@@ -79,7 +114,7 @@ Rows: 1
 To run a different read query:
 
 ```bash
-mvn -f examples/quickstart/pom.xml exec:java -Dexec.args="SELECT 42 AS answer"
+mvn -f examples/quickstart/pom.xml compile exec:java -Dexec.args="SELECT 42 AS answer"
 ```
 
 To run the read-only async examples:

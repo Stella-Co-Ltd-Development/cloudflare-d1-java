@@ -12,6 +12,10 @@ Default base URL:
 https://api.cloudflare.com/client/v4
 ```
 
+The default transport uses a five-second connect timeout and a 30-second read timeout. Zero
+disables either timeout, positive sub-millisecond durations round up to one millisecond, and values
+outside the `HttpURLConnection` integer-millisecond range are capped without overflow.
+
 ## Headers
 
 Required headers:

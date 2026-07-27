@@ -32,10 +32,16 @@ Use the Workers D1 binding for code running inside Cloudflare Workers. Use a Wor
 </dependency>
 ```
 
-Gradle:
+Gradle Groovy DSL:
 
 ```groovy
 implementation "io.github.xxvw:cloudflare-d1-java:0.2.0"
+```
+
+Gradle Kotlin DSL:
+
+```kotlin
+implementation("io.github.xxvw:cloudflare-d1-java:0.2.0")
 ```
 
 Requirements:
@@ -75,6 +81,20 @@ set -a
 set +a
 ```
 
+PowerShell:
+
+```powershell
+Copy-Item .env.example .env
+notepad .env
+
+Get-Content .env | ForEach-Object {
+  if ($_ -match '^\s*([^#][^=]*)=(.*)$') {
+    [Environment]::SetEnvironmentVariable(
+      $matches[1].Trim(), $matches[2].Trim(), "Process")
+  }
+}
+```
+
 The `.env` file is ignored by Git. Never commit real Cloudflare account IDs, database IDs, or API
 tokens.
 
@@ -89,6 +109,22 @@ try (D1Client d1 = D1Client.fromEnv()) {
   result.rows().forEach(System.out::println);
 }
 ```
+
+Use `builderFromEnv()` when you want the same environment variable loading with additional
+configuration:
+
+```java
+try (D1Client d1 = D1Client.builderFromEnv()
+    .connectTimeout(Duration.ofSeconds(10))
+    .requestTimeout(Duration.ofSeconds(45))
+    .retryPolicy(D1RetryPolicy.none())
+    .build()) {
+  D1Result result = d1.query("SELECT 1 AS value");
+}
+```
+
+`fromEnv()` is equivalent to `builderFromEnv().build()`. A zero connect or request timeout means no
+timeout when using the default transport.
 
 For a one-minute local check, run the bundled example:
 
@@ -131,7 +167,7 @@ Rows: 1
 Pass a SQL statement as `exec.args` to try another read query:
 
 ```bash
-mvn -f examples/quickstart/pom.xml exec:java -Dexec.args="SELECT 42 AS answer"
+mvn -f examples/quickstart/pom.xml compile exec:java -Dexec.args="SELECT 42 AS answer"
 ```
 
 Run typed mapping and opt-in write examples:
@@ -330,10 +366,7 @@ The default transport uses the Java standard library and does not add runtime de
 ```java
 import java.util.Collections;
 
-D1Client client = D1Client.builder()
-    .accountId(System.getenv("CLOUDFLARE_ACCOUNT_ID"))
-    .databaseId(System.getenv("D1_DATABASE_ID"))
-    .apiToken(System.getenv("CLOUDFLARE_API_TOKEN"))
+D1Client client = D1Client.builderFromEnv()
     .transport(request -> {
       return new D1TransportResponse(200, Collections.emptyMap(), "{\"success\":true,\"result\":[]}");
     })
@@ -351,6 +384,18 @@ try (D1AsyncClient d1 = D1AsyncClient.fromEnv()) {
   CompletableFuture<D1Result> future = d1.queryAsync("SELECT 1 AS value");
   D1Result result = future.join();
   System.out.println(result.firstRow());
+}
+```
+
+To customize timeouts, retry behavior, mapping, transport, or the executor while retaining the
+standard environment variables, start from `D1AsyncClient.builderFromEnv()`:
+
+```java
+try (D1AsyncClient d1 = D1AsyncClient.builderFromEnv()
+    .requestTimeout(Duration.ofSeconds(45))
+    .executor(executor)
+    .build()) {
+  D1Result result = d1.queryAsync("SELECT 1 AS value").join();
 }
 ```
 

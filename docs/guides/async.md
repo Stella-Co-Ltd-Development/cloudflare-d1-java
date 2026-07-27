@@ -21,10 +21,7 @@ By default, the client creates its own executor backed by named daemon threads (
 ```java
 ExecutorService executor = Executors.newFixedThreadPool(4);
 
-try (D1AsyncClient d1 = D1AsyncClient.builder()
-    .accountId(System.getenv("CLOUDFLARE_ACCOUNT_ID"))
-    .databaseId(System.getenv("D1_DATABASE_ID"))
-    .apiToken(System.getenv("CLOUDFLARE_API_TOKEN"))
+try (D1AsyncClient d1 = D1AsyncClient.builderFromEnv()
     .executor(executor)
     .build()) {
   CompletableFuture<D1Result> future = d1.queryAsync("SELECT 1 AS value");
@@ -34,6 +31,10 @@ try (D1AsyncClient d1 = D1AsyncClient.builder()
   executor.shutdown();
 }
 ```
+
+`D1AsyncClient.fromEnv()` is equivalent to `D1AsyncClient.builderFromEnv().build()`. The
+environment-backed builder also accepts timeout, retry policy, custom transport, and typed mapping
+configuration before `build()`.
 
 A caller-supplied executor is owned by your application. Closing `D1AsyncClient` never shuts it down; only the client-created default executor is shut down on close.
 

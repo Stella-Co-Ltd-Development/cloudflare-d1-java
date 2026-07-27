@@ -105,6 +105,11 @@ public final class D1ClientBuilder {
   /**
    * Sets the connection timeout for the default HTTP client.
    *
+   * <p>{@link Duration#ZERO} disables the connection timeout. Positive values shorter than one
+   * millisecond are rounded up to one millisecond, and values at or above {@code
+   * Integer.MAX_VALUE} milliseconds are capped at that value. This setting is ignored when a
+   * custom transport is supplied.
+   *
    * @param connectTimeout non-negative timeout
    * @return this builder
    */
@@ -115,6 +120,12 @@ public final class D1ClientBuilder {
 
   /**
    * Sets the per-request timeout.
+   *
+   * <p>The duration is included unchanged in each {@link D1TransportRequest}. The default transport
+   * uses it as the {@code HttpURLConnection} read timeout: {@link Duration#ZERO} disables the read
+   * timeout, positive values shorter than one millisecond are rounded up to one millisecond, and
+   * values at or above {@code Integer.MAX_VALUE} milliseconds are capped at that value. A custom
+   * transport is responsible for enforcing the supplied request timeout.
    *
    * @param requestTimeout non-negative timeout
    * @return this builder

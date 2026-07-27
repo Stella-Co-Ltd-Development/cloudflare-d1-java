@@ -34,8 +34,14 @@ java.net.HttpURLConnection
 Rules:
 
 - A custom `D1Transport` can be provided by `D1ClientBuilder`.
-- Request timeout is applied per request.
-- Connect timeout is used when the default client is created.
+- Request timeout is included in every `D1TransportRequest`; the default transport applies it as
+  the `HttpURLConnection` read timeout.
+- Connect timeout controls connection establishment in the default transport.
+- `Duration.ZERO` maps to zero milliseconds and disables the corresponding default transport
+  timeout.
+- Positive sub-millisecond timeouts round up to one millisecond.
+- Timeouts at or above `Integer.MAX_VALUE` milliseconds cap at `Integer.MAX_VALUE` without
+  overflowing `Duration.toMillis()`.
 - No third-party HTTP client dependency is allowed in v0.1.0.
 
 ## Headers

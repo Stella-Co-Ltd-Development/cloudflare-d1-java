@@ -12,6 +12,7 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.release>8</maven.compiler.release>
+    <cloudflare-d1-java.version>0.2.0</cloudflare-d1-java.version>
     <exec.mainClass>example.QuickStart</exec.mainClass>
   </properties>
 
@@ -19,7 +20,7 @@
     <dependency>
       <groupId>io.github.xxvw</groupId>
       <artifactId>cloudflare-d1-java</artifactId>
-      <version>0.2.0</version>
+      <version>${cloudflare-d1-java.version}</version>
     </dependency>
   </dependencies>
 

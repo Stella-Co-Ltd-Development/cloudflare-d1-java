@@ -81,6 +81,21 @@ class HttpURLConnectionD1TransportTest {
   }
 
   @Test
+  void convertsConnectAndRequestTimeoutsWithoutLosingPositiveDurations() {
+    assertThat(HttpURLConnectionD1Transport.timeoutMillis(null)).isZero();
+    assertThat(HttpURLConnectionD1Transport.timeoutMillis(Duration.ZERO)).isZero();
+    assertThat(HttpURLConnectionD1Transport.timeoutMillis(Duration.ofNanos(1))).isOne();
+    assertThat(HttpURLConnectionD1Transport.timeoutMillis(Duration.ofNanos(999_999))).isOne();
+    assertThat(HttpURLConnectionD1Transport.timeoutMillis(Duration.ofMillis(250))).isEqualTo(250);
+    assertThat(HttpURLConnectionD1Transport.timeoutMillis(
+        Duration.ofMillis(Integer.MAX_VALUE - 1L))).isEqualTo(Integer.MAX_VALUE - 1);
+    assertThat(HttpURLConnectionD1Transport.timeoutMillis(
+        Duration.ofMillis(Integer.MAX_VALUE))).isEqualTo(Integer.MAX_VALUE);
+    assertThat(HttpURLConnectionD1Transport.timeoutMillis(
+        Duration.ofSeconds(Long.MAX_VALUE))).isEqualTo(Integer.MAX_VALUE);
+  }
+
+  @Test
   void emptyErrorBodiesReturnAnEmptyString() throws Exception {
     server.enqueue(new MockResponse.Builder().code(500).build());
     HttpURLConnectionD1Transport transport = new HttpURLConnectionD1Transport(Duration.ofSeconds(5));

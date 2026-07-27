@@ -19,10 +19,16 @@ import java.util.concurrent.Executors;
  * daemon threads and shuts it down when the client closes.
  */
 public final class D1AsyncClientBuilder {
-  private final D1ClientBuilder clientBuilder = D1Client.builder();
+  private final D1ClientBuilder clientBuilder;
   private Executor executor;
 
-  D1AsyncClientBuilder() {}
+  D1AsyncClientBuilder() {
+    this(D1Client.builder());
+  }
+
+  D1AsyncClientBuilder(D1ClientBuilder clientBuilder) {
+    this.clientBuilder = Objects.requireNonNull(clientBuilder, "clientBuilder must not be null");
+  }
 
   static ExecutorService newOwnedExecutor() {
     return Executors.newCachedThreadPool(D1Threads.daemonFactory("cloudflare-d1-async-"));
@@ -97,6 +103,8 @@ public final class D1AsyncClientBuilder {
   /**
    * Sets the connection timeout for the default HTTP client.
    *
+   * <p>See {@link D1ClientBuilder#connectTimeout(Duration)} for timeout conversion semantics.
+   *
    * @param connectTimeout non-negative timeout
    * @return this builder
    */
@@ -107,6 +115,9 @@ public final class D1AsyncClientBuilder {
 
   /**
    * Sets the per-request timeout.
+   *
+   * <p>See {@link D1ClientBuilder#requestTimeout(Duration)} for default and custom transport
+   * semantics.
    *
    * @param requestTimeout non-negative timeout
    * @return this builder
