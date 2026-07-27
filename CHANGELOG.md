@@ -6,11 +6,6 @@ This project follows Semantic Versioning.
 
 ## [Unreleased]
 
-### Fixed
-
-- Made nested JSON maps and lists in public response and mapping-error models recursively immutable
-  and defensively copied.
-
 ## [0.2.0] - 2026-07-11
 
 See the [migration guide](docs/guides/migration-0.2.md) for upgrade steps from 0.1.x.
