@@ -27,6 +27,7 @@ try {
 | `D1RateLimitException` | Cloudflare returned HTTP 429. |
 | `D1QueryException` | D1 accepted the request but the SQL operation failed. |
 | `D1BatchException` | At least one batch item failed. |
+| `D1RawBatchException` | At least one raw batch item failed. |
 | `D1MappingException` | Typed row mapping failed. |
 | `D1TimeoutException` | Transport timed out. |
 | `D1TransportException` | Network or transport failure. |
@@ -46,3 +47,7 @@ try {
 ## Sensitive Data
 
 Exception messages do not include API tokens or SQL parameter values. `D1QueryException.sql()` may expose SQL text for diagnostics, so handle it carefully when SQL text itself is sensitive.
+
+`D1BatchException` and `D1RawBatchException` expose the first failed item through
+`failedIndex()`. Their `partialResults()` lists are immutable and include all result items returned
+by the API, including items after the first failure.
