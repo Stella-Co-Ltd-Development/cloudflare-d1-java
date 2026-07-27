@@ -5,7 +5,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.github.xxvw.cloudflare.d1.testsupport.UserRow;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class D1ExceptionTest {
@@ -44,6 +46,41 @@ class D1ExceptionTest {
     assertThat(exception.row()).containsEntry("name", "Taro");
     assertThat(exception.getMessage()).doesNotContain("Taro");
     assertThatThrownBy(() -> exception.row().put("id", 1)).isInstanceOf(UnsupportedOperationException.class);
+  }
+
+  @Test
+  void rawBatchExceptionCopiesPartialResultsAndUsesSanitizedMessage() {
+    D1ResponseInfo error =
+        new D1ResponseInfo(7500, "sensitive-param", null, null, Collections.emptyMap());
+    D1RawResult failed = new D1RawResult(
+        false,
+        Collections.<String>emptyList(),
+        Collections.<List<Object>>emptyList(),
+        D1Meta.empty(),
+        Collections.<D1ResponseInfo>emptyList(),
+        Collections.singletonList(error),
+        "test-token sensitive-param");
+    List<D1RawResult> partialResults = new ArrayList<>();
+    partialResults.add(failed);
+
+    D1RawBatchException exception = new D1RawBatchException(
+        200,
+        "test-token sensitive-param",
+        Collections.singletonList(error),
+        Collections.<D1ResponseInfo>emptyList(),
+        0,
+        partialResults);
+    partialResults.clear();
+
+    assertThat(exception.operation()).contains(D1Operation.RAW_BATCH);
+    assertThat(exception.failedIndex()).isZero();
+    assertThat(exception.partialResults()).containsExactly(failed);
+    assertThat(exception.getMessage())
+        .isEqualTo("D1 raw batch failed")
+        .doesNotContain("test-token")
+        .doesNotContain("sensitive-param");
+    assertThatThrownBy(() -> exception.partialResults().add(failed))
+        .isInstanceOf(UnsupportedOperationException.class);
   }
 
 }

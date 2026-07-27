@@ -145,7 +145,8 @@ D1Exception
  │   ├─ D1AuthorizationException
  │   ├─ D1RateLimitException
  │   ├─ D1QueryException
- │   └─ D1BatchException
+ │   ├─ D1BatchException
+ │   └─ D1RawBatchException
  ├─ D1MappingException
  ├─ D1TimeoutException
  └─ D1TransportException
@@ -214,6 +215,23 @@ Rules:
 - `failedIndex()` returns the first failed result index.
 - `partialResults()` must be immutable.
 
+## D1RawBatchException
+
+Required API:
+
+```java
+public int failedIndex();
+
+public List<D1RawResult> partialResults();
+```
+
+Rules:
+
+- `failedIndex()` returns the first failed raw result index.
+- `partialResults()` must be immutable.
+- Only item-level raw batch failures use `D1RawBatchException`; HTTP and top-level API failures keep
+  their normal status-based exception mapping.
+
 ## D1MappingException
 
 Required API:
@@ -242,6 +260,7 @@ Rules:
 - HTTP 2xx with top-level `success=false`: `D1ApiException` family
 - Query result `success=false`: `D1QueryException`
 - Batch result with any failed item: `D1BatchException`
+- Raw batch result with any failed item: `D1RawBatchException`
 - Network failure: `D1TransportException`
 - Timeout: `D1TimeoutException`
 - Non-JSON error body: `D1ApiException` with `rawBody()`
